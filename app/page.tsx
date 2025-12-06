@@ -2,7 +2,7 @@
 "use client";
 
 import { db } from '../utils/firebaseConfig';
-import { collection, query, orderBy, limit, onSnapshot, DocumentData } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 
@@ -49,7 +49,7 @@ export default function Home() {
         return;
     }
 
-    // CORREÇÃO: Removendo o limite de 50 para trazer mais dados
+    // CORREÇÃO: Removendo o limite (limite(50)) para trazer todos os dados
     const q = query(collection(db, "anomalias"), orderBy("timestamp", "desc")); 
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -69,12 +69,11 @@ export default function Home() {
 
   // 1. EXTRAI LISTA ÚNICA DE CLIENTES PARA O SELETOR
   const clients = useMemo(() => {
-    // CORREÇÃO DO ERRO: Filtra documentos onde 'client_id' é null, undefined ou string vazia
+    // FILTRA E MAPEA: Garante que apenas IDs válidos (não null/undefined) sejam usados
     const clientList = anomalias
         .map(a => a.client_id)
         .filter((id): id is string => id !== undefined && id !== null && id.length > 0); 
     
-    // Retorna a lista única, garantindo que todos os elementos são strings
     return [ALL_CLIENTS, ...Array.from(new Set(clientList))];
   }, [anomalias]);
   
@@ -87,10 +86,8 @@ export default function Home() {
   // 3. AGRUPA DADOS FILTRADOS POR MÉTRICA PARA OS GRÁFICOS
   const chartDataGrouped = useMemo(() => {
     const groups: { [key: string]: Anomalia[] } = {};
-    // Garantimos que só plotamos se houver dados filtrados
     if (filteredAnomalias.length > 0) {
         filteredAnomalias.forEach(a => {
-            // Filtra o documento se a métrica estiver ausente
             if (!a.metricName) return; 
             
             const key = a.metricName;
@@ -105,6 +102,7 @@ export default function Home() {
 
 
   const viewAutomationLog = (logID: string) => {
+    // ESTA FUNÇÃO DEVE SER INTEGRADA COM A LÓGICA DE BUSCA DO LOG DETALHADO
     alert(`Visualizando o log de automação para a execução: ${logID}`);
   };
 
