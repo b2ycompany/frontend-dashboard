@@ -81,6 +81,7 @@ export default function Home() {
   );
 
   const viewAutomationLog = (logID: string) => {
+    // ESTE ALERTA DEVE SER SUBSTITUÍDO POR UM MODAL OU DRAWER COM DETALHES COMPLETOS
     alert(`Visualizando o log de automação para a execução: ${logID}`);
   };
 
@@ -165,7 +166,18 @@ export default function Home() {
               <tr key={a.logID || index} className="border-b hover:bg-gray-50">
                 <td className="py-2 px-4 font-bold text-gray-900">{a.client_id.replace('_', ' ')}</td> 
                 <td className="py-2 px-4">{a.data_type.split('_').join(' ')}</td>
-                <td className="py-2 px-4">{new Date(a.timestamp).toLocaleTimeString()}</td>
+                <td className="py-2 px-4">
+                  {/* CORREÇÃO APLICADA: Formatando para o horário de Brasília (America/Sao_Paulo) */}
+                  {new Date(a.timestamp).toLocaleString('pt-BR', { 
+                    timeZone: 'America/Sao_Paulo', 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                  })}
+                </td>
                 <td className="py-2 px-4">{a.metricName} ({a.value.toFixed(2)})</td>
                 <td className="py-2 px-4">{a.causaRaiz}</td>
                 <td className="py-2 px-4">

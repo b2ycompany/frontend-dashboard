@@ -1,0 +1,5 @@
+firebase-admin
+numpy
+pandas
+scikit-learn
+requests
