@@ -6,8 +6,9 @@ import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/f
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 
-// Importa o componente de gráfico (necessário para os gráficos)
+// Importa os componentes de visualização
 import DashboardChart from '../components/DashboardChart'; 
+import FlowMap from '../components/FlowMap'; 
 
 // Interface ajustada para incluir client_id
 interface Anomalia extends DocumentData {
@@ -25,7 +26,7 @@ interface Anomalia extends DocumentData {
 const ALL_CLIENTS = 'TODOS_CLIENTES';
 const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRANSACAO', 'FLUXO_SINISTRO', 'INFRA_DB_LOCKS'];
 
-// Componente de Card Atualizado para o Tema Dark
+// Componente de Card Atualizado para o Tema Dark/Tecnológico
 const Card: React.FC<{ title: string, value: number, color: string }> = ({ title, value, color }) => (
   // Usando bg-gray-800 e borda neon (cyan)
   <div className={`bg-gray-800/70 p-6 rounded-lg shadow-lg border-l-4 border-cyan-500 transition duration-300 hover:shadow-cyan-500/30`}>
@@ -49,7 +50,7 @@ export default function Home() {
         return;
     }
 
-    // CORREÇÃO: Removendo o limite (limite(50)) para trazer todos os dados
+    // REMOVIDO: o limite de 50. A query agora traz todos os documentos.
     const q = query(collection(db, "anomalias"), orderBy("timestamp", "desc")); 
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -67,9 +68,9 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // 1. EXTRAI LISTA ÚNICA DE CLIENTES PARA O SELETOR
+  // 1. EXTRAI LISTA ÚNICA DE CLIENTES (com tratamento de erro para client_id)
   const clients = useMemo(() => {
-    // FILTRA E MAPEA: Garante que apenas IDs válidos (não null/undefined) sejam usados
+    // Filtra documentos onde 'client_id' é válido antes de mapear
     const clientList = anomalias
         .map(a => a.client_id)
         .filter((id): id is string => id !== undefined && id !== null && id.length > 0); 
@@ -100,9 +101,15 @@ export default function Home() {
     return groups;
   }, [filteredAnomalias]);
 
+  // 4. PREPARA DADOS PARA O MAPA DE FLUXO
+  const mapAnomalies = filteredAnomalias.map(a => ({
+    host: a.host,
+    status: a.status as 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO'
+  }));
+
 
   const viewAutomationLog = (logID: string) => {
-    // ESTA FUNÇÃO DEVE SER INTEGRADA COM A LÓGICA DE BUSCA DO LOG DETALHADO
+    // Implementação de Modal/Drawer para logs deve ser feita aqui.
     alert(`Visualizando o log de automação para a execução: ${logID}`);
   };
 
@@ -162,8 +169,26 @@ export default function Home() {
         <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} color="red" />
         <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} color="green" />
       </div>
+      
+      {/* SEÇÃO DO MAPA DE ARQUITETURA DE FLUXO */}
+      <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">
+          Mapa de Erros no Fluxo de Serviço
+      </h2>
+      {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
+          <FlowMap 
+              client={selectedClient}
+              flowType={filterType}
+              anomalies={mapAnomalies}
+          />
+      ) : (
+          <div className="bg-gray-800/70 p-6 rounded-lg text-gray-400 mb-8 border border-gray-700">
+              Selecione um **Cliente E** um **Tipo de Fluxo** específico para visualizar o mapa de arquitetura.
+          </div>
+      )}
+      {/* FIM SEÇÃO DO MAPA */}
 
-      {/* SEÇÃO DE GRÁFICOS (Gráficos são gerados por cada métrica única) */}
+
+      {/* SEÇÃO DE GRÁFICOS */}
       <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">Análise Gráfica de Performance</h2>
       
       {Object.keys(chartDataGrouped).length === 0 ? (
@@ -201,6 +226,7 @@ export default function Home() {
           <tbody>
             {filteredAnomalias.map((a, index) => (
               <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
+                {/* Usando optional chaining (?) para evitar erro de .replace em nulo/undefined */}
                 <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
                 <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
                 <td className="py-3 px-4 text-gray-300">
