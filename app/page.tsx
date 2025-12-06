@@ -69,7 +69,12 @@ export default function Home() {
 
   // 1. EXTRAI LISTA ÚNICA DE CLIENTES PARA O SELETOR
   const clients = useMemo(() => {
-    const clientList = anomalias.map(a => a.client_id);
+    // CORREÇÃO DO ERRO: Filtra documentos onde 'client_id' é null, undefined ou string vazia
+    const clientList = anomalias
+        .map(a => a.client_id)
+        .filter((id): id is string => id !== undefined && id !== null && id.length > 0); 
+    
+    // Retorna a lista única, garantindo que todos os elementos são strings
     return [ALL_CLIENTS, ...Array.from(new Set(clientList))];
   }, [anomalias]);
   
@@ -85,6 +90,9 @@ export default function Home() {
     // Garantimos que só plotamos se houver dados filtrados
     if (filteredAnomalias.length > 0) {
         filteredAnomalias.forEach(a => {
+            // Filtra o documento se a métrica estiver ausente
+            if (!a.metricName) return; 
+            
             const key = a.metricName;
             if (!groups[key]) {
                 groups[key] = [];
@@ -166,7 +174,7 @@ export default function Home() {
         </div>
       ) : (
         Object.keys(chartDataGrouped).map(metricKey => (
-          // ATIVAÇÃO DOS GRÁFICOS - O DashboardChart deve gerenciar o tema escuro
+          // ATIVAÇÃO DOS GRÁFICOS
           <DashboardChart
             key={metricKey}
             title={metricKey.split('_').join(' ')}
@@ -195,8 +203,8 @@ export default function Home() {
           <tbody>
             {filteredAnomalias.map((a, index) => (
               <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
-                <td className="py-3 px-4 font-bold text-gray-200">{a.client_id.replace('_', ' ')}</td> 
-                <td className="py-3 px-4 text-gray-300">{a.data_type.split('_').join(' ')}</td>
+                <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
+                <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
                 <td className="py-3 px-4 text-gray-300">
                   {/* TIMESTAMP CORRIGIDO PARA BRASÍLIA */}
                   {new Date(a.timestamp).toLocaleString('pt-BR', { 
