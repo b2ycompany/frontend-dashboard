@@ -24,3 +24,35 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* frontend-dashboard/app/globals.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------- */
+/* NOVOS ESTILOS PARA TEMA NEON / FUTURISTA */
+/* ------------------------------------------- */
+
+/* Fundo base muito escuro */
+body {
+  background-color: #0d0d1a; /* Dark Blue/Purple */
+}
+
+/* Efeito de Sombra Neon Azul/Ciano (usado nos KPIs) */
+.shadow-neon {
+  box-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF, 0 0 15px #00FFFF, 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+/* Efeito de Borda Neon (usado nos cards) */
+.border-neon {
+  border: 1px solid #1a1a38; /* Borda escura para profundidade */
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+}
+
+/* Efeito Hover Neon */
+.hover-neon:hover {
+  box-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+  transform: translateY(-2px);
+}
