@@ -37,6 +37,17 @@ export default function Home() {
   const [selectedClient, setSelectedClient] = useState<string>(ALL_CLIENTS); 
 
   useEffect(() => {
+    // LOG 1: Verificar se a inicialização do Firebase foi bem-sucedida (checa se o objeto DB existe)
+    console.log("DEBUG: Tentando inicializar listener do Firestore...");
+    if (db) {
+        // LOG 2: Verificar se as variáveis públicas foram carregadas (mostra apenas um hash da API Key)
+        console.log(`DEBUG: Chave API carregada (hash): ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 5) + '...' : 'FALHA'}`);
+    } else {
+        console.error("DEBUG: Falha na inicialização do DB (Variáveis de ambiente ausentes ou arquivo firebaseConfig.ts com erro).");
+        return;
+    }
+
+
     // Escuta em tempo real a coleção 'anomalias' (limite de 50 para ver vários cenários)
     const q = query(collection(db, "anomalias"), orderBy("timestamp", "desc"), limit(50));
     
@@ -46,6 +57,12 @@ export default function Home() {
         anomaliasData.push(doc.data() as Anomalia);
       });
       setAnomalias(anomaliasData);
+      
+      // LOG 3: Mostrar o número de documentos lidos do Firestore
+      console.log(`DEBUG: Sucesso! Documentos lidos do Firestore: ${anomaliasData.length}`);
+    }, (error) => {
+        // LOG 4: Capturar qualquer erro de permissão ou conexão do Firestore
+        console.error("DEBUG: ERRO na Leitura do Firestore:", error.code, error.message);
     });
 
     return () => unsubscribe();
