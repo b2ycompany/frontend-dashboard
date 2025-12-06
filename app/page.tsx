@@ -5,20 +5,17 @@ import { db } from '../utils/firebaseConfig';
 import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
-import dynamic from 'next/dynamic'; // Importa o dynamic para o wrapper
-
-// Importa os componentes de visualização
-import DashboardChart from '../components/DashboardChart'; 
+import dynamic from 'next/dynamic';
 import FlowMap from '../components/FlowMap'; 
-import LogModal from '../components/LogModal'; // Importa o Modal de Log
-import ExecutiveDashboard from '../components/ExecutiveDashboard'; // Importa o componente original
+import LogModal from '../components/LogModal'; 
+import ExecutiveDashboard from '../components/ExecutiveDashboard'; 
+import DashboardChart from '../components/DashboardChart';
 
 // -----------------------------------------------------------------
-// CORREÇÃO CRÍTICA DO MÓDULO: Cria o wrapper do Dashboard Executivo 
-// AQUI para garantir que ele só carregue no cliente e resolva o erro 2307.
+// CORREÇÃO: Cria o wrapper do Dashboard Executivo AQUI para o dynamic import
 // -----------------------------------------------------------------
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
-  ssr: false, // Desabilita a renderização no servidor para evitar o erro 'window is not defined'
+  ssr: false, 
 });
 // -----------------------------------------------------------------
 
@@ -55,8 +52,6 @@ export default function Home() {
   const [anomalias, setAnomalias] = useState<Anomalia[]>([]);
   const [filterType, setFilterType] = useState<string>('TODOS'); 
   const [selectedClient, setSelectedClient] = useState<string>(ALL_CLIENTS); 
-  
-  // Implementação do Log Modal
   const [isLogModalOpen, setIsLogModalOpen] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,8 +68,6 @@ export default function Home() {
         anomaliasData.push(doc.data() as Anomalia);
       });
       setAnomalias(anomaliasData);
-      
-      console.log(`DEBUG: Sucesso! Documentos lidos do Firestore: ${anomaliasData.length}`);
     }, (error) => {
         console.error("DEBUG: ERRO na Leitura do Firestore:", error.code, error.message);
     });
@@ -125,11 +118,32 @@ export default function Home() {
     setIsLogModalOpen(logID); // Abre o modal com o Log ID selecionado
   };
 
+  // Funções de manipulação de filtro
+  const handleClientSelect = (client: string) => {
+      setSelectedClient(client);
+      // Se um cliente for selecionado, mas o filtro de tipo ainda for 'TODOS', 
+      // podemos tentar selecionar o primeiro tipo para exibir o mapa.
+      if (filterType === 'TODOS' && client !== ALL_CLIENTS && FILTER_TYPES.length > 1) {
+          setFilterType(FILTER_TYPES[1]); 
+      }
+  };
+
+  const handleFlowTypeSelect = (type: string) => {
+    setFilterType(type);
+    // Se um tipo for selecionado, mas o cliente ainda for 'TODOS',
+    // podemos tentar selecionar o primeiro cliente para exibir o mapa.
+    if (selectedClient === ALL_CLIENTS && clients.length > 1) {
+        setSelectedClient(clients[1]);
+    }
+  };
+
+
   return (
     // TEMA DARK BASE
     <div className="min-h-screen bg-gray-950 p-6 text-gray-100"> 
         
       {/* RENDERIZA O MODAL DE LOGS SE HOUVER UM ID SELECIONADO */}
+      {/* IMPLEMENTAÇÃO DA FUNCIONALIDADE DE MODAL */}
       {isLogModalOpen && (
           <LogModal 
               logID={isLogModalOpen} 
@@ -158,7 +172,7 @@ export default function Home() {
                   {clients.map((client) => (
                     <button
                       key={client}
-                      onClick={() => setSelectedClient(client)}
+                      onClick={() => handleClientSelect(client)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition duration-150 border 
                         ${selectedClient === client 
                           ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/40' 
@@ -177,13 +191,14 @@ export default function Home() {
               {/* Coluna 1: Filtros de Tipo */}
               <div className="lg:col-span-1 bg-gray-900 p-4 rounded-lg border-neon shadow-sm shadow-cyan-500/20">
                   <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
-                      2. Filtros de Fluxo
+                      2. Seleção de Fluxo (Ativa Mapa)
                   </h3>
                   <div className="flex flex-col space-y-2">
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
-                          onClick={() => setFilterType(type)}
+                          // MUDANÇA: Usa a nova função que também tenta selecionar um cliente
+                          onClick={() => handleFlowTypeSelect(type)}
                           className={`w-full text-left px-3 py-1 rounded-md text-sm font-medium transition duration-150 border 
                             ${filterType === type 
                               ? 'bg-cyan-600 text-white border-cyan-500' 
@@ -230,7 +245,7 @@ export default function Home() {
               />
           ) : (
               <div className="bg-gray-900 p-6 rounded-lg text-gray-400 border-neon">
-                  Selecione um **Cliente E** um **Tipo de Fluxo** específico para visualizar o mapa de arquitetura e diagnosticar o erro.
+                  Selecione um **Cliente E** um **Tipo de Fluxo** específico (acima) para visualizar o mapa de arquitetura.
               </div>
           )}
       </section>
