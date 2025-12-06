@@ -1,0 +1,31 @@
+---
+# Playbook: Correção de Serviço de Onboarding/Cadastro
+- name: Robô de Correção - Limpar Cache e Reiniciar Serviço de Onboarding
+  hosts: "{{ target_host | default('api-onboarding-01') }}"
+  become: yes
+  vars:
+    service_name: onboarding_api_service
+
+  tasks:
+    - name: 1. Limpar cache da aplicação (simulação)
+      ansible.builtin.shell: /usr/local/bin/clear_cache.sh {{ service_name }}
+      args:
+        warn: no
+      ignore_errors: yes
+
+    - name: 2. Reiniciar o serviço de API de Onboarding
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: restarted
+        daemon_reload: yes
+
+    - name: 3. Verificar o status pós-correção
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: started
+      register: service_status
+      ignore_errors: yes
+      
+    - name: Reporte de Simulação (Em ambiente real, enviaria para Firestore)
+      ansible.builtin.debug:
+        msg: "Playbook Onboarding Executado. Status final: {{ service_status.status | default('Erro ao verificar') }}"

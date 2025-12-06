@@ -1,0 +1,26 @@
+---
+# Playbook: Reiniciar Motor de Cálculo de Risco
+- name: Robô de Correção - Reiniciar Serviço de Risco (FLUXO_SINISTRO)
+  hosts: "{{ target_host | default('risk-engine-01') }}"
+  become: yes
+  vars:
+    service_name: risk_calculation_engine
+
+  tasks:
+    - name: Parar serviço de Risco
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: stopped
+
+    - name: Aguardar 3 segundos para garantir a parada
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Iniciar serviço de Risco
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: started
+        
+    - name: Reporte de Simulação
+      ansible.builtin.debug:
+        msg: "Playbook Seguros Executado. Motor de Risco reiniciado no host {{ target_host }}."

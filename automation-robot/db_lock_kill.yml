@@ -1,0 +1,17 @@
+---
+# Playbook: Matar Sessões de DB com Locks
+- name: Robô de Correção - Matar Locks Ativos no DB
+  hosts: "{{ target_host | default('db-server-prod-01') }}"
+  become: yes
+  
+  tasks:
+    - name: Executar script para identificar e encerrar sessões problemáticas
+      ansible.builtin.shell: /usr/local/bin/kill_long_running_queries.sh
+      args:
+        warn: no
+      register: lock_kill_result
+      ignore_errors: yes
+
+    - name: Reporte de Simulação
+      ansible.builtin.debug:
+        msg: "Playbook DB Locks Executado. Resultado: {{ lock_kill_result.stdout | default('Nenhuma sessão problemática encontrada/encerrada.') }}"

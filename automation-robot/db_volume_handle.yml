@@ -1,0 +1,30 @@
+---
+# Playbook: Tratamento de Alto Volume de Transação
+- name: Robô de Correção - Otimizar Pool de Conexões de DB
+  hosts: "{{ target_host | default('db-pool-server-01') }}"
+  become: yes
+  vars:
+    config_file: /etc/db-pool/pgbouncer.ini
+
+  tasks:
+    - name: 1. Fazer backup do arquivo de configuração
+      ansible.builtin.copy:
+        src: "{{ config_file }}"
+        dest: "{{ config_file }}.backup"
+        remote_src: yes
+
+    - name: 2. Aumentar o pool máximo de conexões (Simulação)
+      ansible.builtin.lineinfile:
+        path: "{{ config_file }}"
+        regexp: '^max_client_conn\s*='
+        line: 'max_client_conn = 1000'
+        backup: yes
+        
+    - name: 3. Reiniciar o serviço de Pool de Conexões
+      ansible.builtin.systemd:
+        name: pgbouncer
+        state: reloaded
+
+    - name: 4. Reporte de Simulação
+      ansible.builtin.debug:
+        msg: "Playbook de Transação DB Executado. Pool de conexões aumentado para 1000."

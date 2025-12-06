@@ -1,0 +1,32 @@
+---
+# Playbook: Reset de Conexão de Autenticação
+- name: Robô de Correção - Resetar Conexão de Autenticação
+  hosts: "{{ target_host | default('auth-service-03') }}"
+  become: yes
+  vars:
+    auth_service: auth_middleware_service
+
+  tasks:
+    - name: 1. Bloquear brevemente a porta 443 (simulação de reset de firewall/conexão)
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 443
+        jump: REJECT
+        state: present
+        
+    - name: Aguardar 10 segundos para reset de conexão
+      ansible.builtin.pause:
+        seconds: 10
+        
+    - name: 2. Remover a regra de bloqueio (Restabelecer conexão)
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 443
+        jump: REJECT
+        state: absent
+
+    - name: 3. Reporte de Simulação
+      ansible.builtin.debug:
+        msg: "Playbook de Autenticação Executado. Conexão 443 do host {{ target_host }} foi resetada."
