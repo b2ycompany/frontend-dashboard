@@ -6,6 +6,9 @@ import { collection, query, orderBy, limit, onSnapshot, DocumentData } from 'fir
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 
+// Importa o componente de gráfico (necessário para os gráficos)
+import DashboardChart from '../components/DashboardChart'; 
+
 // Interface ajustada para incluir client_id
 interface Anomalia extends DocumentData {
   timestamp: string;
@@ -22,11 +25,15 @@ interface Anomalia extends DocumentData {
 const ALL_CLIENTS = 'TODOS_CLIENTES';
 const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRANSACAO', 'FLUXO_SINISTRO', 'INFRA_DB_LOCKS'];
 
-// Componente simples de Card para KPIs
+// Componente de Card Atualizado para o Tema Dark
 const Card: React.FC<{ title: string, value: number, color: string }> = ({ title, value, color }) => (
-  <div className={`bg-white p-6 rounded-lg shadow-lg border-t-4 border-${color}-500`}>
-    <p className="text-sm font-medium text-gray-500">{title}</p>
-    <p className="text-3xl font-bold mt-1 text-gray-800">{value}</p>
+  // Usando bg-gray-800 e borda neon (cyan)
+  <div className={`bg-gray-800/70 p-6 rounded-lg shadow-lg border-l-4 border-cyan-500 transition duration-300 hover:shadow-cyan-500/30`}>
+    <p className="text-sm font-medium text-gray-400">{title}</p>
+    <p className="text-4xl font-extrabold mt-2 text-white">
+        {/* Adiciona efeito de contorno/sombra para a fonte */}
+        <span className="text-shadow-md shadow-cyan-400">{value}</span>
+    </p>
   </div>
 );
 
@@ -37,19 +44,13 @@ export default function Home() {
   const [selectedClient, setSelectedClient] = useState<string>(ALL_CLIENTS); 
 
   useEffect(() => {
-    // LOG 1: Verificar se a inicialização do Firebase foi bem-sucedida (checa se o objeto DB existe)
-    console.log("DEBUG: Tentando inicializar listener do Firestore...");
-    if (db) {
-        // LOG 2: Verificar se as variáveis públicas foram carregadas (mostra apenas um hash da API Key)
-        console.log(`DEBUG: Chave API carregada (hash): ${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 5) + '...' : 'FALHA'}`);
-    } else {
-        console.error("DEBUG: Falha na inicialização do DB (Variáveis de ambiente ausentes ou arquivo firebaseConfig.ts com erro).");
+    if (!db) {
+        console.error("ERRO CRÍTICO: Firebase DB não inicializado.");
         return;
     }
 
-
-    // Escuta em tempo real a coleção 'anomalias' (limite de 50 para ver vários cenários)
-    const q = query(collection(db, "anomalias"), orderBy("timestamp", "desc"), limit(50));
+    // CORREÇÃO: Removendo o limite de 50 para trazer mais dados
+    const q = query(collection(db, "anomalias"), orderBy("timestamp", "desc")); 
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const anomaliasData: Anomalia[] = [];
@@ -58,10 +59,8 @@ export default function Home() {
       });
       setAnomalias(anomaliasData);
       
-      // LOG 3: Mostrar o número de documentos lidos do Firestore
       console.log(`DEBUG: Sucesso! Documentos lidos do Firestore: ${anomaliasData.length}`);
     }, (error) => {
-        // LOG 4: Capturar qualquer erro de permissão ou conexão do Firestore
         console.error("DEBUG: ERRO na Leitura do Firestore:", error.code, error.message);
     });
 
@@ -80,31 +79,49 @@ export default function Home() {
     (filterType === 'TODOS' || a.data_type === filterType)
   );
 
+  // 3. AGRUPA DADOS FILTRADOS POR MÉTRICA PARA OS GRÁFICOS
+  const chartDataGrouped = useMemo(() => {
+    const groups: { [key: string]: Anomalia[] } = {};
+    // Garantimos que só plotamos se houver dados filtrados
+    if (filteredAnomalias.length > 0) {
+        filteredAnomalias.forEach(a => {
+            const key = a.metricName;
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(a);
+        });
+    }
+    return groups;
+  }, [filteredAnomalias]);
+
+
   const viewAutomationLog = (logID: string) => {
-    // ESTE ALERTA DEVE SER SUBSTITUÍDO POR UM MODAL OU DRAWER COM DETALHES COMPLETOS
     alert(`Visualizando o log de automação para a execução: ${logID}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-4xl font-bold text-gray-800 mb-8">
+    // TEMA DARK: Fundo escuro
+    <div className="min-h-screen bg-gray-950 p-8 text-gray-100"> 
+      <h1 className="text-4xl font-extrabold text-cyan-400 mb-8 tracking-wider">
         Painel de Monitoramento Multicliente (AIOps)
       </h1>
       
       {/* SEÇÃO DE FILTROS */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <h3 className="text-lg font-semibold mb-2">Filtros Ativos</h3>
+      <div className="bg-gray-900 p-4 rounded-lg shadow-xl shadow-gray-900/50 mb-6 border border-gray-700">
+        <h3 className="text-lg font-semibold mb-3 text-gray-200">Filtros Operacionais</h3>
         
         {/* SELETOR DE CLIENTE */}
         <div className="mb-4">
-          <label htmlFor="client-selector" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="client-selector" className="block text-sm font-medium text-cyan-400 mb-1">
             Selecionar Cliente:
           </label>
           <select
             id="client-selector"
             value={selectedClient}
             onChange={(e) => setSelectedClient(e.target.value)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            // Estilo Dark para Select
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md"
           >
             {clients.map(client => (
               <option key={client} value={client}>
@@ -120,10 +137,10 @@ export default function Home() {
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition duration-150 
+              className={`px-3 py-1 rounded-full text-sm font-medium transition duration-150 border 
                 ${filterType === type 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                  ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/40' // Ativo
+                  : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600' // Inativo
                 }`}
             >
               {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
@@ -133,41 +150,55 @@ export default function Home() {
       </div>
       {/* FIM SEÇÃO DE FILTROS */}
 
-      {/* Cards de KPIs (Adaptados para o filtro atual) */}
+      {/* Cards de KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} color="blue" />
         <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} color="red" />
         <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} color="green" />
       </div>
 
-      {/* Placeholder de Gráficos - Você deve integrar o DashboardChart aqui */}
-      <h2 className="text-2xl font-semibold text-gray-700 mb-4">Análise Gráfica de Performance (Placeholder)</h2>
-      <div className="p-6 bg-white rounded-lg shadow-lg text-center text-gray-500 mb-8 border-dashed border-2">
-          Para exibir gráficos, integre o componente DashboardChart.tsx aqui.
-      </div>
+      {/* SEÇÃO DE GRÁFICOS (Gráficos são gerados por cada métrica única) */}
+      <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">Análise Gráfica de Performance</h2>
       
-      <h2 className="text-2xl font-semibold text-gray-700 mb-4">Anomalias Filtradas ({filteredAnomalias.length})</h2>
+      {Object.keys(chartDataGrouped).length === 0 ? (
+        <div className="p-6 bg-gray-800/70 rounded-lg shadow-lg text-center text-gray-400 mb-8 border border-gray-700">
+          Nenhuma anomalia filtrada para plotar os gráficos.
+        </div>
+      ) : (
+        Object.keys(chartDataGrouped).map(metricKey => (
+          // ATIVAÇÃO DOS GRÁFICOS - O DashboardChart deve gerenciar o tema escuro
+          <DashboardChart
+            key={metricKey}
+            title={metricKey.split('_').join(' ')}
+            data={chartDataGrouped[metricKey]}
+          />
+        ))
+      )}
+      {/* FIM SEÇÃO DE GRÁFICOS */}
+
+      <h2 className="text-2xl font-semibold text-gray-200 mt-8 mb-4 border-b border-gray-700 pb-2">Anomalias Filtradas ({filteredAnomalias.length})</h2>
       
+      {/* TABELA DE ANOMALIAS */}
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white shadow-md rounded-lg">
-          <thead className="bg-gray-200">
+        <table className="min-w-full bg-gray-800/70 shadow-xl rounded-lg border border-gray-700">
+          <thead className="bg-gray-700">
             <tr>
-              <th className="py-2 px-4 text-left">Cliente</th> 
-              <th className="py-2 px-4 text-left">Tipo</th>
-              <th className="py-2 px-4 text-left">Timestamp</th>
-              <th className="py-2 px-4 text-left">Métrica</th>
-              <th className="py-2 px-4 text-left">Causa Raiz (IA)</th>
-              <th className="py-2 px-4 text-left">Status Robô</th>
-              <th className="py-2 px-4 text-left">Log</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Tipo</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Métrica</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status Robô</th>
+              <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Log</th>
             </tr>
           </thead>
           <tbody>
             {filteredAnomalias.map((a, index) => (
-              <tr key={a.logID || index} className="border-b hover:bg-gray-50">
-                <td className="py-2 px-4 font-bold text-gray-900">{a.client_id.replace('_', ' ')}</td> 
-                <td className="py-2 px-4">{a.data_type.split('_').join(' ')}</td>
-                <td className="py-2 px-4">
-                  {/* CORREÇÃO APLICADA: Formatando para o horário de Brasília (America/Sao_Paulo) */}
+              <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
+                <td className="py-3 px-4 font-bold text-gray-200">{a.client_id.replace('_', ' ')}</td> 
+                <td className="py-3 px-4 text-gray-300">{a.data_type.split('_').join(' ')}</td>
+                <td className="py-3 px-4 text-gray-300">
+                  {/* TIMESTAMP CORRIGIDO PARA BRASÍLIA */}
                   {new Date(a.timestamp).toLocaleString('pt-BR', { 
                     timeZone: 'America/Sao_Paulo', 
                     day: '2-digit', 
@@ -178,20 +209,20 @@ export default function Home() {
                     second: '2-digit' 
                   })}
                 </td>
-                <td className="py-2 px-4">{a.metricName} ({a.value.toFixed(2)})</td>
-                <td className="py-2 px-4">{a.causaRaiz}</td>
-                <td className="py-2 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold 
-                    ${a.status === 'CORRIGIDO' ? 'bg-green-100 text-green-800' : 
-                      a.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                <td className="py-3 px-4 text-gray-300">{a.metricName} ({a.value.toFixed(2)})</td>
+                <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
+                <td className="py-3 px-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold 
+                    ${a.status === 'CORRIGIDO' ? 'bg-green-600 text-white' : 
+                      a.status === 'PENDENTE' ? 'bg-yellow-600 text-gray-900' : 'bg-red-600 text-white'
+                    } shadow-md`}>
                     {a.status}
                   </span>
                 </td>
-                <td className="py-2 px-4">
+                <td className="py-3 px-4">
                   <button 
                     onClick={() => viewAutomationLog(a.logID)} 
-                    className="text-blue-500 hover:text-blue-700 font-medium disabled:opacity-50"
+                    className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
                     disabled={!a.logID}
                   >
                     Ver Log
