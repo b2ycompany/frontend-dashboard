@@ -1,0 +1,35 @@
+---
+# automation-robot/restart_service.yml
+- name: Robô de Correção - Reiniciar Serviço Crítico
+  # O host seria passado como extra-var pelo script Python/Job Scheduler (target_host)
+  # Exemplo: ansible-playbook restart_service.yml -e "target_host=webserver-prod-01"
+  hosts: "{{ target_host | default('webserver-prod-01') }}" 
+  become: yes
+
+  tasks:
+    - name: Parar o serviço webapp
+      ansible.builtin.systemd:
+        name: webapp_service 
+        state: stopped
+
+    - name: Aguardar 5 segundos
+      ansible.builtin.pause:
+        seconds: 5
+        
+    - name: Reiniciar o serviço webapp (Correção)
+      ansible.builtin.systemd:
+        name: webapp_service
+        state: started
+        daemon_reload: yes
+
+    - name: Coletar dados de status para reportar ao Firestore
+      ansible.builtin.command: systemctl status webapp_service
+      register: service_status
+      ignore_errors: yes
+      
+    # Nesta etapa real, você usaria um módulo customizado ou cURL para 
+    # enviar o resultado do service_status de volta ao Firestore ou a uma API
+    # que atualiza o status na coleção 'automacao_logs' e 'anomalias'.
+    - name: Simular reporte de sucesso ao Banco de Dados Central
+      ansible.builtin.debug:
+        msg: "Resultado da automação: SUCCESSO. Status do serviço: {{ service_status.stdout }}"
