@@ -122,6 +122,12 @@ export default function Home() {
         <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} color="green" />
       </div>
 
+      {/* Placeholder de Gráficos - Você deve integrar o DashboardChart aqui */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-4">Análise Gráfica de Performance (Placeholder)</h2>
+      <div className="p-6 bg-white rounded-lg shadow-lg text-center text-gray-500 mb-8 border-dashed border-2">
+          Para exibir gráficos, integre o componente DashboardChart.tsx aqui.
+      </div>
+      
       <h2 className="text-2xl font-semibold text-gray-700 mb-4">Anomalias Filtradas ({filteredAnomalias.length})</h2>
       
       <div className="overflow-x-auto">
