@@ -12,6 +12,13 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// --- NOVA VERIFICAÇÃO DE SEGURANÇA ---
+if (!firebaseConfig.apiKey) {
+    console.error("ERRO CRÍTICO: Variável NEXT_PUBLIC_FIREBASE_API_KEY ausente ou indefinida. Não é possível iniciar o Firebase.");
+    // Retornamos um objeto vazio ou lançamos um erro para evitar a falha silenciosa
+    throw new Error("Firebase API Key is missing. Check Vercel Environment Variables.");
+}
+
 // Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 
