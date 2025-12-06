@@ -2,8 +2,9 @@
 "use client";
 
 import ExecutiveDonut from "./ExecutiveDonut";
-import ExecutivePie from "./ExecutivePie"; // Assumindo que ExecutivePie espera PieData[]
-import ExecutiveBar from "./ExecutiveBar";
+import ExecutivePie from "./ExecutivePie"; 
+// CORREÇÃO: Importa o wrapper client-only para evitar o erro 'window is not defined' no build
+import ExecutiveBar from "./ExecutiveBarClient"; 
 
 // 1. Definindo interfaces para tipar a entrada e as estruturas de agrupamento
 interface Anomalia {
@@ -24,24 +25,22 @@ interface BarData {
 export default function ExecutiveDashboard({ anomalias }: { anomalias: Anomalia[] }) {
   
   // 2. Agrupamento para Causas Raiz (Pie Chart)
-  // CORRIGIDO: Tipagem do acumulador e do item 'a'
   const distribCausas = Object.values(
     anomalias.reduce((acc: Record<string, PieData>, a: Anomalia) => {
       acc[a.causaRaiz] = acc[a.causaRaiz] || { name: a.causaRaiz, value: 0 };
       acc[a.causaRaiz].value++;
       return acc;
     }, {})
-  ) as PieData[]; // Cast final para o tipo que ExecutivePie espera
+  ) as PieData[]; 
 
   // 3. Agrupamento por Host (Bar Chart)
-  // CORRIGIDO: Tipagem do acumulador e do item 'a'
   const countPorHost = Object.values(
     anomalias.reduce((acc: Record<string, BarData>, a: Anomalia) => {
       acc[a.host] = acc[a.host] || { host: a.host, value: 0 };
       acc[a.host].value++;
       return acc;
     }, {})
-  ) as BarData[]; // Cast final para o tipo que ExecutiveBar espera
+  ) as BarData[]; 
 
   return (
     <div className="space-y-10">
@@ -62,8 +61,8 @@ export default function ExecutiveDashboard({ anomalias }: { anomalias: Anomalia[
 
         <ExecutiveBar
           title="Anomalias por Host"
-          labels={countPorHost.map((i) => i.host)} // 'i' é tipado como BarData, então i.host existe
-          values={countPorHost.map((i) => i.value)} // 'i' é tipado como BarData, então i.value existe
+          labels={countPorHost.map((i) => i.host)} 
+          values={countPorHost.map((i) => i.value)} 
         />
       </div>
     </div>
