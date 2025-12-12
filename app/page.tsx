@@ -2,15 +2,7 @@
 "use client";
 
 import { db } from '../utils/firebaseConfig';
-import { 
-  collection, 
-  query, 
-  orderBy, 
-  onSnapshot, 
-  DocumentData,
-  doc, // Necessário para referenciar o documento
-  updateDoc // Necessário para atualizar o documento
-} from 'firebase/firestore'; 
+import { collection, query, orderBy, onSnapshot, DocumentData, doc, updateDoc } from 'firebase/firestore'; 
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic'; 
@@ -137,12 +129,8 @@ export default function Home() {
 
   // FUNÇÃO DE ESCALONAMENTO CORRIGIDA COM SINTAXE V9
   const handleEscalation = (anomaly: Anomalia) => {
-    // Cria a referência ao documento da anomalia usando doc(db, coleção, ID_do_documento)
     const anomalyRef = doc(db, 'anomalias', anomaly.logID);
-    
-    // Atualiza o status no Firestore usando updateDoc(referencia, campos)
     updateDoc(anomalyRef, { status: 'EM_ESCALONAMENTO' });
-
     alert(`Anomalia ${anomaly.logID} escalonada para o time SRE. Status atualizado.`);
   };
 
@@ -181,13 +169,11 @@ export default function Home() {
           </h1>
       </header>
 
-      {/* --- FILTROS & KPIs (Seção Superior Otimizada) --- */}
-      <section className="space-y-6 mb-10">
-          
-          {/* BLOCo 1: SELEÇÃO DE CLIENTE (Melhoria de UX/UI) */}
+      {/* --- 1. FILTROS DE CLIENTE --- */}
+      <section className="space-y-6 mb-8">
           <div className="bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
               <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
-                  1. Seleção de Contas Monitoradas
+                  Seleção de Contas Monitoradas
               </h3>
               <div className="flex flex-wrap gap-3">
                   {clients.map((client) => (
@@ -205,77 +191,79 @@ export default function Home() {
                   ))}
               </div>
           </div>
-          
-          {/* BLOCo 2: FILTROS DE FLUXO E KPIs (Horizontal) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              
-              {/* Coluna 1: Filtros de Tipo */}
-              <div className="lg:col-span-1 bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
-                      2. Seleção de Jornada (Ativa Mapa)
-                  </h3>
-                  <div className="flex flex-col space-y-3">
-                      {FILTER_TYPES.map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => handleFlowTypeSelect(type)}
-                          className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
-                            ${filterType === type 
-                              ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
-                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
-                            }`}
-                        >
-                          {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
-                        </button>
-                      ))}
-                  </div>
-              </div>
+      </section>
 
-              {/* Colunas 2-4: KPIs */}
-              <div className="lg:col-span-3 grid grid-cols-3 gap-6">
-                  <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
-                  <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA').length} />
-                  <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
+      {/* --- 2. FILTROS DE FLUXO & KPIs --- */}
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+          
+          {/* Coluna 1: Filtros de Tipo */}
+          <div className="lg:col-span-1 bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
+              <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
+                  Seleção de Jornada (Ativa Mapa)
+              </h3>
+              <div className="flex flex-col space-y-3">
+                  {FILTER_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => handleFlowTypeSelect(type)}
+                      className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
+                        ${filterType === type 
+                          ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
+                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
+                        }`}
+                    >
+                      {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
+                    </button>
+                  ))}
               </div>
+          </div>
+
+          {/* Colunas 2-4: KPIs */}
+          <div className="lg:col-span-3 grid grid-cols-3 gap-6">
+              <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
+              <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA').length} />
+              <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
           </div>
 
       </section>
       
       {/* ========================================================= */}
-      {/* 7. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) - NOVO */}
+      {/* 3. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) - NOVO POSICIONAMENTO */}
       {/* ========================================================= */}
       <section className="space-y-6 mb-10">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              7. Gestão de Incidentes (Fila de Trabalho)
+              Gestão de Incidentes (Fila de Trabalho)
           </h2>
           <div className="chart-box p-6 rounded-lg shadow-xl">
             <h3 className="text-xl font-bold text-cyan-400 mb-4">
                 Incidentes Pendentes de Ação Manual ou Escalonamento
             </h3>
             
+            {/* NOVO LAYOUT DE CARDS PARA FILAS (Melhora UX/UI) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Fila 1: Falha na Automação (Exige Ação Imediata) */}
-                <div className="bg-red-900/40 p-4 rounded-lg border border-red-700 pulse-red">
+                
+                {/* Fila 1: FALHA CORREÇÃO (Máxima Prioridade) */}
+                <div className="bg-red-900/40 p-5 rounded-lg border border-red-700 shadow-xl pulse-red">
                     <p className="text-sm font-medium text-red-400">FALHA CORREÇÃO (Reaberto)</p>
-                    <p className="text-3xl font-bold mt-1 text-white">
+                    <p className="text-4xl font-extrabold mt-1 text-white">
                         {filteredAnomalias.filter(a => a.status === 'CORRIGIDO_FALHA').length}
                     </p>
                     <p className="text-xs text-red-200 mt-2">Exige atenção imediata e escalonamento manual.</p>
                 </div>
 
-                {/* Fila 2: Ticket Aberto (Aguardando Robô ou Confirmação) */}
-                <div className="bg-blue-900/40 p-4 rounded-lg border border-blue-700">
+                {/* Fila 2: TICKET ABERTO (Aguardando Robô) */}
+                <div className="bg-blue-900/40 p-5 rounded-lg border border-blue-700 shadow-xl">
                     <p className="text-sm font-medium text-blue-400">TICKET ABERTO (Robô Acionado)</p>
-                    <p className="text-3xl font-bold mt-1 text-white">
+                    <p className="text-4xl font-extrabold mt-1 text-white">
                         {filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO').length}
                     </p>
                     <p className="text-xs text-blue-200 mt-2">Aguardando resultado da autocorreção.</p>
                 </div>
 
-                {/* Fila 3: Em Escalonamento Manual (Opcional - Simulação de Ação do Operador) */}
-                <div className="bg-yellow-900/40 p-4 rounded-lg border border-yellow-700">
+                {/* Fila 3: EM ESCALONAMENTO (Operador) */}
+                <div className="bg-yellow-900/40 p-5 rounded-lg border border-yellow-700 shadow-xl">
                     <p className="text-sm font-medium text-yellow-400">EM ESCALONAMENTO (Operador)</p>
-                    <p className="text-3xl font-bold mt-1 text-white">
+                    <p className="text-4xl font-extrabold mt-1 text-white">
                         {filteredAnomalias.filter(a => a.status === 'EM_ESCALONAMENTO').length}
                     </p>
                     <p className="text-xs text-yellow-200 mt-2">Incidente em fila SRE/NOC no sistema externo.</p>
@@ -284,20 +272,21 @@ export default function Home() {
           </div>
       </section>
 
-      {/* --- DASHBOARD EXECUTIVO (Indicadores de Nível Milionário) --- */}
+
+      {/* --- 4. DASHBOARD EXECUTIVO --- */}
       <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              3. Indicadores Executivos e Visualizações
+              Indicadores Executivos e Visualizações
           </h2>
           <div className="chart-box p-6 rounded-lg shadow-xl">
               <ExecutiveDashboardClient anomalias={filteredAnomalias} />
           </div>
       </section>
       
-      {/* --- MAPA DE FLUXO E ARQUITETURA --- */}
+      {/* --- 5. MAPA DE FLUXO E ARQUITETURA --- */}
       <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              4. Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
+              Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
           </h2>
           <div className="chart-box p-6 rounded-lg shadow-xl">
               {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
@@ -314,10 +303,10 @@ export default function Home() {
           </div>
       </section>
       
-      {/* --- GRÁFICOS (Time Series e Performance) --- */}
+      {/* --- 6. GRÁFICOS (Time Series e Performance) --- */}
       <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              5. Análise Gráfica de Performance (Time Series)
+              Análise Gráfica de Performance (Time Series)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.keys(chartDataGrouped).length === 0 ? (
@@ -338,10 +327,10 @@ export default function Home() {
       </section>
 
       
-      {/* --- TABELA DE ANOMALIAS (Logs Estruturados) --- */}
+      {/* --- 7. TABELA DE ANOMALIAS (Logs Estruturados) --- */}
       <section>
           <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">
-              6. Logs de Anomalias (Para Diagnóstico)
+              Logs de Anomalias (Para Diagnóstico)
           </h2>
           
           <div className="overflow-x-auto">
@@ -361,13 +350,11 @@ export default function Home() {
                 {filteredAnomalias.map((a, index) => {
                   const statusInfo = STATUS_MAP[a.status] || STATUS_MAP.TICKET_ABERTO;
                   
-                  // Verifica se é necessário botão de Escalonar
                   const needsEscalation = a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA';
                   
                   return (
                     <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
                       
-                      {/* ID do Ticket */}
                       <td className="py-3 px-4 text-blue-400 font-medium">{a.ticket_id || 'N/A'}</td>
 
                       <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
@@ -385,7 +372,6 @@ export default function Home() {
                       </td>
                       <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
                       <td className="py-3 px-4">
-                        {/* Status Mapeado */}
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.class}`}>
                           {statusInfo.text}
                         </span>
