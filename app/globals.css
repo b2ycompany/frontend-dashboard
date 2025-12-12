@@ -5,26 +5,11 @@
 @tailwind utilities;
 
 /* ------------------------------------------- */
-/* AJUSTES GLOBAIS PARA TEMA PROFISSIONAL / LIGHT MODE */
+/* AJUSTES GLOBAIS PARA TEMA PROFISSIONAL (LIGHT MODE) */
 /* ------------------------------------------- */
 
-/* Define a cor de fundo clara para todo o corpo da aplicação */
+/* Define a cor de fundo principal clara */
 body {
-  /* Cor cinza muito claro (o bg-gray-50 usado no page.tsx) */
+  /* Cor correspondente ao Tailwind bg-gray-50 */
   background-color: #f9fafb; 
 }
-
-/* * Nota: As classes 'border-neon', 'shadow-neon', e 'hover-neon' 
- * foram removidas ou não são mais necessárias no page.tsx Light Mode.
- * Mantenha-as apenas se seus outros componentes ainda as usarem. 
- * Para este tema, o Tailwind padrão (shadow-xl, border-gray-200) é suficiente.
- */
-
-/* Você pode adicionar estilos de fonte global aqui, se necessário: */
-/*
-@layer base {
-  html {
-    font-family: 'Inter', sans-serif;
-  }
-}
-*/

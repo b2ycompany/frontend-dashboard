@@ -35,16 +35,32 @@ interface Anomalia extends DocumentData {
 const ALL_CLIENTS = 'TODOS_CLIENTES';
 const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRANSACAO', 'FLUXO_SINISTRO', 'INFRA_DB_LOCKS'];
 
-// Componente de Card (Design Light Mode Profissional)
-const Card: React.FC<{ title: string, value: number }> = ({ title, value }) => (
-  // Design Light: Fundo branco, sombra sutil, borda de foco
-  <div className={`bg-white p-6 rounded-xl border border-gray-200 shadow-lg transition duration-300 hover:shadow-cyan-200`}>
-    <p className="text-sm font-medium text-gray-500">{title}</p>
-    <p className="text-4xl font-extrabold mt-2 text-gray-900">
-        <span className="text-cyan-600">{value}</span>
-    </p>
-  </div>
-);
+// Componente de Card (Design Clean e Focado)
+const Card: React.FC<{ title: string, value: number, status?: 'PENDENTE' | 'CORRIGIDO' | 'TOTAL' }> = ({ title, value, status }) => {
+    let colorClass = "text-gray-900";
+    let bgClass = "bg-white";
+
+    if (status === 'PENDENTE') {
+        colorClass = "text-red-600";
+        bgClass = "bg-red-50";
+    } else if (status === 'CORRIGIDO') {
+        colorClass = "text-green-600";
+        bgClass = "bg-green-50";
+    } else {
+        colorClass = "text-blue-600";
+        bgClass = "bg-white";
+    }
+
+    return (
+        // Design Light: Borda fina e sombra média para profundidade
+        <div className={`${bgClass} p-6 rounded-xl border-l-4 border-gray-200 shadow-md transition duration-300 hover:shadow-lg`}>
+            <p className="text-sm font-medium text-gray-500">{title}</p>
+            <p className="text-4xl font-extrabold mt-2">
+                <span className={colorClass}>{value}</span>
+            </p>
+        </div>
+    );
+};
 
 
 export default function Home() {
@@ -148,29 +164,32 @@ export default function Home() {
       {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
       {/* ========================================================= */}
       <header className="flex justify-start items-center mb-10">
-          <h1 className="text-5xl font-extrabold text-cyan-600 tracking-wider">
-              Painel de Monitoramento Multicliente (AIOps)
+          <h1 className="text-5xl font-extrabold text-gray-900 tracking-wider">
+              Painel de Monitoramento Multicliente
           </h1>
+          <span className="text-lg font-medium text-blue-600 ml-4 border border-blue-200 bg-blue-50 px-3 py-1 rounded-full">
+            AIOps Engine
+          </span>
       </header>
 
       {/* --- FILTROS & KPIs (Seção Superior Otimizada) --- */}
       <section className="space-y-6 mb-12">
           
-          {/* BLOCo 1: SELEÇÃO DE CLIENTE (Design Profissional) */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-xl">
-              <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b border-gray-200 pb-2">
+          {/* BLOCo 1: SELEÇÃO DE CLIENTE (Controles em Abas/Pills) */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4 text-gray-700">
                   1. Seleção de Contas Monitoradas
               </h3>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-lg border border-gray-200">
                   {clients.map((client) => (
                     <button
                       key={client}
                       onClick={() => handleClientSelect(client)}
-                      // BOTÃO LIGHT MODE: Foco no azul ciano sólido quando selecionado
-                      className={`px-6 py-3 rounded-lg text-lg font-semibold transition duration-200 border-2 
+                      // CONTROLES MODERNOS (PILLS): Fundo e texto em destaque
+                      className={`px-4 py-2 rounded-lg text-base font-medium transition duration-200 
                         ${selectedClient === client 
-                          ? 'bg-cyan-600 text-white border-cyan-600 shadow-lg shadow-cyan-300/50' // Selecionado: Cor sólida
-                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200' // Não Selecionado: Fundo clean
+                          ? 'bg-blue-600 text-white shadow-md' // Selecionado: Azul Sólido
+                          : 'bg-transparent text-gray-600 hover:bg-white' // Não Selecionado: Transparente/Clean
                         }`}
                     >
                       {client.replace('_', ' ')}
@@ -183,20 +202,20 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               
               {/* Coluna 1: Filtros de Tipo */}
-              <div className="lg:col-span-1 bg-white p-6 rounded-lg border border-gray-200 shadow-xl">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b border-gray-200 pb-2">
-                      2. Filtros de Jornada (Ativa Mapa)
+              <div className="lg:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                      2. Seleção de Jornada
                   </h3>
-                  <div className="flex flex-col space-y-3">
+                  <div className="flex flex-col space-y-2">
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
                           onClick={() => handleFlowTypeSelect(type)}
-                          // BOTÃO LIGHT MODE: Foco no azul ciano sólido quando selecionado
-                          className={`w-full text-left px-4 py-2.5 rounded-md text-base font-medium transition duration-200 border 
+                          // CONTROLES MODERNOS (PILLS VERTICAIS)
+                          className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition duration-200 
                             ${filterType === type 
-                              ? 'bg-cyan-600 text-white border-cyan-600' // Selecionado: Cor sólida
-                              : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200' // Não Selecionado: Fundo clean
+                              ? 'bg-blue-100 text-blue-800 border-l-4 border-blue-600' // Selecionado: Fundo claro + Borda lateral
+                              : 'bg-white text-gray-700 hover:bg-gray-50' // Não Selecionado: Fundo clean
                             }`}
                         >
                           {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
@@ -207,23 +226,20 @@ export default function Home() {
 
               {/* Colunas 2-4: KPIs */}
               <div className="lg:col-span-3 grid grid-cols-3 gap-8">
-                  <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} />
-                  <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} />
-                  <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} />
+                  <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} status="TOTAL"/>
+                  <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} status="PENDENTE"/>
+                  <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} status="CORRIGIDO"/>
               </div>
           </div>
 
       </section>
       
-      {/* --- DASHBOARD EXECUTIVO (Indicadores de Nível Milionário) --- */}
+      {/* --- DASHBOARD EXECUTIVO --- */}
       <section className="space-y-6 mb-12">
           <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
-              3. Indicadores Executivos e Visualizações
+              3. Indicadores Executivos (Visão Gerencial)
           </h2>
-          {/* CONTAINER BRANCO PARA O EXECUTIVE DASHBOARD */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-xl">
-              {/* Nota: O ExecutiveDashboard em si DEVE ser adaptado internamente para Light Mode,
-                 especialmente os gráficos (eixos, legendas). */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
               <ExecutiveDashboardClient anomalias={filteredAnomalias} />
           </div>
       </section>
@@ -233,10 +249,8 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
               4. Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
           </h2>
-          {/* CONTAINER BRANCO PARA O FLOW MAP */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-xl">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
               {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
-                  // Nota: O FlowMap.tsx também deve ter seu background ajustado internamente.
                   <FlowMap 
                       client={selectedClient}
                       flowType={filterType}
@@ -244,7 +258,7 @@ export default function Home() {
                   />
               ) : (
                   <div className="text-gray-500 p-4 text-center">
-                      Selecione um **Cliente E** um **Tipo de Fluxo** para visualizar o mapa de arquitetura.
+                      Selecione um **Cliente** e um **Tipo de Fluxo** para visualizar o mapa de arquitetura.
                   </div>
               )}
           </div>
@@ -253,17 +267,17 @@ export default function Home() {
       {/* --- GRÁFICOS (Time Series e Performance) --- */}
       <section className="space-y-6 mb-12">
           <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
-              5. Análise Gráfica de Performance (Time Series)
+              5. Análise Gráfica de Tendência (Time Series)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {Object.keys(chartDataGrouped).length === 0 ? (
-                  <div className="p-6 bg-white rounded-lg text-center text-gray-500 border border-gray-200 md:col-span-2 shadow-lg">
-                      Nenhuma anomalia filtrada para plotar os gráficos de série temporal.
+                  <div className="p-6 bg-white rounded-xl text-center text-gray-500 border border-gray-200 md:col-span-2 shadow-lg">
+                      Nenhuma anomalia filtrada para plotar os gráficos.
                   </div>
               ) : (
                   // CONTAINER BRANCO PARA CADA GRÁFICO INDIVIDUAL
                   Object.keys(chartDataGrouped).map(metricKey => (
-                    <div key={metricKey} className="bg-white p-6 rounded-lg border border-gray-200 shadow-lg">
+                    <div key={metricKey} className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
                         <DashboardChart
                           title={metricKey.split('_').join(' ')}
                           data={chartDataGrouped[metricKey]}
@@ -278,11 +292,11 @@ export default function Home() {
       {/* --- TABELA DE ANOMALIAS (Logs Estruturados) --- */}
       <section>
           <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b border-gray-300 pb-2">
-              6. Anomalias Filtradas ({filteredAnomalias.length})
+              6. Logs de Anomalias (Para Diagnóstico)
           </h2>
           
           <div className="overflow-x-auto">
-            {/* TABELA COM FUNDO BRANCO */}
+            {/* TABELA COM FUNDO BRANCO E CORES DE STATUS CLARAS */}
             <table className="min-w-full bg-white shadow-xl rounded-lg border border-gray-200">
               <thead className="bg-gray-100">
                 <tr>
@@ -324,7 +338,7 @@ export default function Home() {
                     <td className="py-3 px-4">
                       <button 
                         onClick={() => openLogModal(a.logID)} 
-                        className="text-cyan-600 hover:text-cyan-800 font-medium disabled:opacity-50"
+                        className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
                         disabled={!a.logID}
                       >
                         Ver Log
