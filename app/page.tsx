@@ -2,7 +2,15 @@
 "use client";
 
 import { db } from '../utils/firebaseConfig';
-import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  DocumentData,
+  doc, // Necessário para referenciar o documento
+  updateDoc // Necessário para atualizar o documento
+} from 'firebase/firestore'; 
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic'; 
@@ -39,7 +47,7 @@ const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRAN
 // Mapeamento de Status para Cor e Texto (Melhor Prática de UI)
 const STATUS_MAP = {
     'TICKET_ABERTO': { text: 'TICKET ABERTO', class: 'bg-blue-600 text-white pulse-cyan' },
-    'EM_ESCALONAMENTO': { text: 'ESCALONADO', class: 'bg-yellow-600 text-gray-900' }, // Simular escalonamento manual
+    'EM_ESCALONAMENTO': { text: 'ESCALONADO', class: 'bg-yellow-600 text-gray-900' }, 
     'CORRIGIDO_SUCESSO': { text: 'CORRIGIDO (AIOps)', class: 'bg-green-600 text-white' },
     'CORRIGIDO_FALHA': { text: 'FALHA CORREÇÃO', class: 'bg-red-600 text-white' },
     'NORMAL': { text: 'NORMAL', class: 'bg-gray-700 text-gray-300' },
@@ -76,7 +84,7 @@ export default function Home() {
       querySnapshot.forEach((doc) => {
         anomaliasData.push(doc.data() as Anomalia);
       });
-      setAnomalias(anomaliasData.filter(a => a.status !== 'NORMAL')); // Filtra o status 'NORMAL'
+      setAnomalias(anomaliasData.filter(a => a.status !== 'NORMAL'));
     }, (error) => {
         console.error("DEBUG: ERRO na Leitura do Firestore:", error.code, error.message);
     });
@@ -119,7 +127,6 @@ export default function Home() {
   // 4. PREPARA DADOS PARA O MAPA DE FLUXO
   const mapAnomalies = filteredAnomalias.map(a => ({
     host: a.host,
-    // Mapeia status de sucesso para CORRIGIDO, tudo mais é considerado PENDENTE/FALHA para fins visuais no mapa
     status: (a.status === 'CORRIGIDO_SUCESSO' ? 'CORRIGIDO' : 'PENDENTE') as 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO'
   }));
 
@@ -128,7 +135,17 @@ export default function Home() {
     setIsLogModalOpen(logID);
   };
 
-  // Funções de manipulação de filtro OTIMIZADAS PARA O MAPA
+  // FUNÇÃO DE ESCALONAMENTO CORRIGIDA COM SINTAXE V9
+  const handleEscalation = (anomaly: Anomalia) => {
+    // Cria a referência ao documento da anomalia usando doc(db, coleção, ID_do_documento)
+    const anomalyRef = doc(db, 'anomalias', anomaly.logID);
+    
+    // Atualiza o status no Firestore usando updateDoc(referencia, campos)
+    updateDoc(anomalyRef, { status: 'EM_ESCALONAMENTO' });
+
+    alert(`Anomalia ${anomaly.logID} escalonada para o time SRE. Status atualizado.`);
+  };
+
   const handleClientSelect = (client: string) => {
       setSelectedClient(client);
       if (client !== ALL_CLIENTS && filterType === 'TODOS' && FILTER_TYPES.length > 1) {
@@ -141,13 +158,6 @@ export default function Home() {
     if (type !== 'TODOS' && selectedClient === ALL_CLIENTS && clients.length > 1) {
         setSelectedClient(clients.find(client => client !== ALL_CLIENTS) || ALL_CLIENTS);
     }
-  };
-
-  // Funções de Gestão de Tickets
-  const handleEscalation = (anomaly: Anomalia) => {
-      // Simula o escalonamento, mudando o status no Firestore
-      db.collection('anomalias').doc(anomaly.logID).update({ status: 'EM_ESCALONAMENTO' });
-      alert(`Anomalia ${anomaly.logID} escalonada para o time SRE. Status atualizado.`);
   };
 
 
@@ -224,9 +234,7 @@ export default function Home() {
               {/* Colunas 2-4: KPIs */}
               <div className="lg:col-span-3 grid grid-cols-3 gap-6">
                   <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
-                  {/* KPI para TICKET ABERTO (Ação de Escalonamento) */}
                   <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA').length} />
-                  {/* KPI para CORRIGIDAS (Sucesso da Automação) */}
                   <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
               </div>
           </div>
@@ -275,7 +283,6 @@ export default function Home() {
             </div>
           </div>
       </section>
-
 
       {/* --- DASHBOARD EXECUTIVO (Indicadores de Nível Milionário) --- */}
       <section className="space-y-8 mb-12">
@@ -347,7 +354,7 @@ export default function Home() {
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ações</th> {/* MUDOU: Ações */}
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ações</th>
                 </tr>
               </thead>
               <tbody>
