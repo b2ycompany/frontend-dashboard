@@ -172,33 +172,32 @@ export default function Home() {
       )}
 
       {/* ========================================================= */}
-      {/* NOVO CABEÇALHO PROEMINENTE (HEADER) */}
+      {/* CABEÇALHO COM LOGO DOMINANTE E CENTRALIZADO */}
       {/* ========================================================= */}
-      <header className="bg-gray-900 border-b border-gray-800 shadow-xl py-4 mb-8 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <header className="bg-gray-900 border-b border-gray-800 shadow-xl py-6 mb-8 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col items-center justify-center">
               
-              <div className="flex items-center space-x-4">
-                  {/* LOGO LR MONITOR GRANDE E CORRIGIDO */}
-                  <Image 
-                    src="/logo_lr_monitor.jpeg" 
-                    alt="LR Monitor Logo" 
-                    width={220} // Aumento do tamanho
-                    height={40}  // Aumento da altura
-                    priority={true} 
-                    style={{ objectFit: 'contain' }} // Garante que a imagem não seja achatada
-                  /> 
+              {/* Contêiner do Logo com Efeito Neon */}
+              <div className="flex flex-col items-center justify-center mb-4 space-y-2">
+                  <div className="p-2 border-neon pulse-cyan rounded-xl shadow-cyan-500/50">
+                      <Image 
+                        src="/logo_lr_monitor.jpeg" 
+                        alt="LR Monitor Logo" 
+                        width={300} // Aumento MAIOR (300%)
+                        height={60}  // Aumento MAIOR
+                        priority={true} 
+                        style={{ objectFit: 'contain' }} // Garante que a imagem não seja achatada
+                      /> 
+                  </div>
                   
-                  {/* Título Principal Abaixo do Logo */}
-                  <h1 className="text-3xl font-extrabold text-cyan-400 tracking-wide ml-4 hidden sm:block">
-                      Dashboard Operacional
+                  {/* Título Secundário */}
+                  <h1 className="text-xl font-extrabold text-cyan-400 tracking-wide">
+                      Dashboard Operacional AIOps
                   </h1>
               </div>
 
-              {/* Espaço para navegação futura ou perfil do usuário */}
-              <div className="flex items-center space-x-4">
-                 <p className="text-sm text-gray-400 hidden md:block">Bem-vindo(a), Operador SRE</p>
-              </div>
-
+              {/* Linha Divisória */}
+              <div className="w-full h-px bg-gray-700 mt-2"></div>
           </div>
       </header>
 
