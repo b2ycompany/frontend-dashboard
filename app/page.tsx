@@ -2,16 +2,27 @@
 "use client";
 
 import { db } from '../utils/firebaseConfig';
-import { collection, query, orderBy, onSnapshot, DocumentData, doc, updateDoc } from 'firebase/firestore'; 
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  DocumentData,
+  doc, 
+  updateDoc 
+} from 'firebase/firestore'; 
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic'; 
+
+// Importação CORRIGIDA dos ícones usados nos Cards de Gestão de Incidentes
+import { FiBarChart2, FiHardDrive, FiUsers } from 'react-icons/fi'; 
 
 // Importa os componentes de visualização
 import DashboardChart from '../components/DashboardChart'; 
 import FlowMap from '../components/FlowMap'; 
 import LogModal from '../components/LogModal'; 
-import ExecutiveDashboard from '../components/ExecutiveDashboard';
+import Sidebar from '../components/Sidebar'; 
 
 // Importação Dinâmica para SSR
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
@@ -150,8 +161,8 @@ export default function Home() {
 
 
   return (
-    // TEMA DARK BASE
-    <div className="min-h-screen bg-gray-950 p-6 text-gray-100"> 
+    // CONTÊINER PRINCIPAL: Adiciona o padding esquerdo para a Sidebar
+    <div className="min-h-screen bg-gray-950 text-gray-100"> 
         
       {isLogModalOpen && (
           <LogModal 
@@ -160,246 +171,263 @@ export default function Home() {
           />
       )}
 
-      {/* ========================================================= */}
-      {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
-      {/* ========================================================= */}
-      <header className="flex justify-start items-center mb-8">
-          <h1 className="text-4xl font-extrabold text-cyan-400 tracking-wider">
-              Painel de Monitoramento Multicliente (AIOps)
-          </h1>
-      </header>
+      {/* RENDERIZAÇÃO DA SIDEBAR */}
+      <Sidebar />
 
-      {/* --- 1. FILTROS DE CLIENTE --- */}
-      <section className="space-y-6 mb-8">
-          <div className="bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
-              <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
-                  Seleção de Contas Monitoradas
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                  {clients.map((client) => (
-                    <button
-                      key={client}
-                      onClick={() => handleClientSelect(client)}
-                      className={`px-5 py-2.5 rounded-lg text-lg font-bold tracking-wider transition duration-200 
-                        ${selectedClient === client 
-                          ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
-                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
-                        }`}
-                    >
-                      {client.replace('_', ' ')}
-                    </button>
-                  ))}
-              </div>
-          </div>
-      </section>
+      {/* CONTEÚDO PRINCIPAL: Empurrado para a direita (pl-64) */}
+      <div className="pl-64 p-6"> 
+        
+        {/* ========================================================= */}
+        {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
+        {/* ========================================================= */}
+        <header className="flex justify-start items-center mb-8">
+            {/* Título Principal (LR Monitor está na Sidebar) */}
+            <h1 className="text-3xl font-extrabold text-cyan-400 tracking-wider">
+                Dashboard Operacional
+            </h1>
+        </header>
 
-      {/* --- 2. FILTROS DE FLUXO & KPIs --- */}
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
-          
-          {/* Coluna 1: Filtros de Tipo */}
-          <div className="lg:col-span-1 bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
-              <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
-                  Seleção de Jornada (Ativa Mapa)
-              </h3>
-              <div className="flex flex-col space-y-3">
-                  {FILTER_TYPES.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleFlowTypeSelect(type)}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
-                        ${filterType === type 
-                          ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
-                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
-                        }`}
-                    >
-                      {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
-                    </button>
-                  ))}
-              </div>
-          </div>
-
-          {/* Colunas 2-4: KPIs */}
-          <div className="lg:col-span-3 grid grid-cols-3 gap-6">
-              <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
-              <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA').length} />
-              <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
-          </div>
-
-      </section>
-      
-      {/* ========================================================= */}
-      {/* 3. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) - NOVO POSICIONAMENTO */}
-      {/* ========================================================= */}
-      <section className="space-y-6 mb-10">
-          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              Gestão de Incidentes (Fila de Trabalho)
-          </h2>
-          <div className="chart-box p-6 rounded-lg shadow-xl">
-            <h3 className="text-xl font-bold text-cyan-400 mb-4">
-                Incidentes Pendentes de Ação Manual ou Escalonamento
-            </h3>
-            
-            {/* NOVO LAYOUT DE CARDS PARA FILAS (Melhora UX/UI) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* Fila 1: FALHA CORREÇÃO (Máxima Prioridade) */}
-                <div className="bg-red-900/40 p-5 rounded-lg border border-red-700 shadow-xl pulse-red">
-                    <p className="text-sm font-medium text-red-400">FALHA CORREÇÃO (Reaberto)</p>
-                    <p className="text-4xl font-extrabold mt-1 text-white">
-                        {filteredAnomalias.filter(a => a.status === 'CORRIGIDO_FALHA').length}
-                    </p>
-                    <p className="text-xs text-red-200 mt-2">Exige atenção imediata e escalonamento manual.</p>
-                </div>
-
-                {/* Fila 2: TICKET ABERTO (Aguardando Robô) */}
-                <div className="bg-blue-900/40 p-5 rounded-lg border border-blue-700 shadow-xl">
-                    <p className="text-sm font-medium text-blue-400">TICKET ABERTO (Robô Acionado)</p>
-                    <p className="text-4xl font-extrabold mt-1 text-white">
-                        {filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO').length}
-                    </p>
-                    <p className="text-xs text-blue-200 mt-2">Aguardando resultado da autocorreção.</p>
-                </div>
-
-                {/* Fila 3: EM ESCALONAMENTO (Operador) */}
-                <div className="bg-yellow-900/40 p-5 rounded-lg border border-yellow-700 shadow-xl">
-                    <p className="text-sm font-medium text-yellow-400">EM ESCALONAMENTO (Operador)</p>
-                    <p className="text-4xl font-extrabold mt-1 text-white">
-                        {filteredAnomalias.filter(a => a.status === 'EM_ESCALONAMENTO').length}
-                    </p>
-                    <p className="text-xs text-yellow-200 mt-2">Incidente em fila SRE/NOC no sistema externo.</p>
+        {/* --- 1. FILTROS DE CLIENTE --- */}
+        <section className="space-y-6 mb-8">
+            <div className="bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
+                <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
+                    Seleção de Contas Monitoradas
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                    {clients.map((client) => (
+                      <button
+                        key={client}
+                        onClick={() => handleClientSelect(client)}
+                        className={`px-5 py-2.5 rounded-lg text-lg font-bold tracking-wider transition duration-200 
+                          ${selectedClient === client 
+                            ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
+                            : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
+                          }`}
+                      >
+                        {client.replace('_', ' ')}
+                      </button>
+                    ))}
                 </div>
             </div>
-          </div>
-      </section>
+        </section>
+
+        {/* --- 2. FILTROS DE FLUXO & KPIs --- */}
+        <section className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+            
+            {/* Coluna 1: Filtros de Tipo */}
+            <div className="lg:col-span-1 bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
+                <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
+                    Seleção de Jornada (Ativa Mapa)
+                </h3>
+                <div className="flex flex-col space-y-3">
+                    {FILTER_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => handleFlowTypeSelect(type)}
+                        className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
+                          ${filterType === type 
+                            ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
+                            : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
+                          }`}
+                      >
+                        {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
+                      </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Colunas 2-4: KPIs */}
+            <div className="lg:col-span-3 grid grid-cols-3 gap-6">
+                <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
+                <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA').length} />
+                <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
+            </div>
+
+        </section>
+        
+        {/* ========================================================= */}
+        {/* 3. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) - NOVO LAYOUT DE CARDS */}
+        {/* ========================================================= */}
+        <section className="space-y-6 mb-10">
+            <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                Gestão de Incidentes (Fila de Trabalho)
+            </h2>
+            <div className="chart-box p-6 rounded-lg shadow-xl">
+              <h3 className="text-xl font-bold text-cyan-400 mb-4">
+                  Incidentes Pendentes de Ação Manual ou Escalonamento
+              </h3>
+              
+              {/* NOVO LAYOUT DE CARDS PARA FILAS (Simulando o Image Gerado) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Fila 1: FALHA CORREÇÃO (Máxima Prioridade) */}
+                  <div className="bg-red-700/80 p-6 rounded-xl border border-red-500 shadow-xl pulse-red">
+                      <p className="text-sm font-medium text-white">FALHA CORREÇÃO (Reaberto)</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-5xl font-extrabold text-white">
+                            {filteredAnomalias.filter(a => a.status === 'CORRIGIDO_FALHA').length}
+                        </p>
+                        <FiBarChart2 className="w-12 h-12 text-red-300 opacity-60" /> 
+                      </div>
+                      <p className="text-xs text-red-200 mt-3 border-t border-red-600 pt-2">Exige atenção imediata e escalonamento manual.</p>
+                  </div>
+
+                  {/* Fila 2: TICKET ABERTO (Aguardando Robô) */}
+                  <div className="bg-blue-700/80 p-6 rounded-xl border border-blue-500 shadow-xl">
+                      <p className="text-sm font-medium text-white">TICKET ABERTO (Robô Acionado)</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-5xl font-extrabold text-white">
+                            {filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO').length}
+                        </p>
+                        <FiHardDrive className="w-12 h-12 text-blue-300 opacity-60" /> 
+                      </div>
+                      <p className="text-xs text-blue-200 mt-3 border-t border-blue-600 pt-2">Aguardando resultado da autocorreção.</p>
+                  </div>
+
+                  {/* Fila 3: EM ESCALONAMENTO (Operador) */}
+                  <div className="bg-yellow-600/80 p-6 rounded-xl border border-yellow-500 shadow-xl">
+                      <p className="text-sm font-medium text-gray-900">EM ESCALONAMENTO (Operador)</p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-5xl font-extrabold text-gray-900">
+                            {filteredAnomalias.filter(a => a.status === 'EM_ESCALONAMENTO').length}
+                        </p>
+                        <FiUsers className="w-12 h-12 text-gray-900 opacity-60" /> 
+                      </div>
+                      <p className="text-xs text-gray-800 mt-3 border-t border-yellow-700 pt-2">Incidente em fila SRE/NOC no sistema externo.</p>
+                  </div>
+              </div>
+            </div>
+        </section>
 
 
-      {/* --- 4. DASHBOARD EXECUTIVO --- */}
-      <section className="space-y-8 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              Indicadores Executivos e Visualizações
-          </h2>
-          <div className="chart-box p-6 rounded-lg shadow-xl">
-              <ExecutiveDashboardClient anomalias={filteredAnomalias} />
-          </div>
-      </section>
-      
-      {/* --- 5. MAPA DE FLUXO E ARQUITETURA --- */}
-      <section className="space-y-8 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
-          </h2>
-          <div className="chart-box p-6 rounded-lg shadow-xl">
-              {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
-                  <FlowMap 
-                      client={selectedClient}
-                      flowType={filterType}
-                      anomalies={mapAnomalies}
-                  />
-              ) : (
-                  <div className="text-gray-400 p-4 text-center">
-                      Selecione um **Cliente E** um **Tipo de Fluxo** (acima) para visualizar o mapa de arquitetura.
-                  </div>
-              )}
-          </div>
-      </section>
-      
-      {/* --- 6. GRÁFICOS (Time Series e Performance) --- */}
-      <section className="space-y-8 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
-              Análise Gráfica de Performance (Time Series)
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.keys(chartDataGrouped).length === 0 ? (
-                  <div className="chart-box p-6 rounded-lg text-center text-gray-400 md:col-span-2">
-                      Nenhuma anomalia filtrada para plotar os gráficos de série temporal.
-                  </div>
-              ) : (
-                  Object.keys(chartDataGrouped).map(metricKey => (
-                    <div key={metricKey} className="chart-box p-6 rounded-lg">
-                        <DashboardChart
-                          title={metricKey.split('_').join(' ')}
-                          data={chartDataGrouped[metricKey]}
-                        />
+        {/* --- 4. DASHBOARD EXECUTIVO --- */}
+        <section className="space-y-8 mb-12">
+            <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                Indicadores Executivos e Visualizações
+            </h2>
+            <div className="chart-box p-6 rounded-lg shadow-xl">
+                <ExecutiveDashboardClient anomalias={filteredAnomalias} />
+            </div>
+        </section>
+        
+        {/* --- 5. MAPA DE FLUXO E ARQUITETURA --- */}
+        <section className="space-y-8 mb-12">
+            <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
+            </h2>
+            <div className="chart-box p-6 rounded-lg shadow-xl">
+                {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
+                    <FlowMap 
+                        client={selectedClient}
+                        flowType={filterType}
+                        anomalies={mapAnomalies}
+                    />
+                ) : (
+                    <div className="text-gray-400 p-4 text-center">
+                        Selecione um **Cliente E** um **Tipo de Fluxo** (acima) para visualizar o mapa de arquitetura.
                     </div>
-                  ))
-              )}
-          </div>
-      </section>
+                )}
+            </div>
+        </section>
+        
+        {/* --- 6. GRÁFICOS (Time Series e Performance) --- */}
+        <section className="space-y-8 mb-12">
+            <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                Análise Gráfica de Performance (Time Series)
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.keys(chartDataGrouped).length === 0 ? (
+                    <div className="chart-box p-6 rounded-lg text-center text-gray-400 md:col-span-2">
+                        Nenhuma anomalia filtrada para plotar os gráficos de série temporal.
+                    </div>
+                ) : (
+                    Object.keys(chartDataGrouped).map(metricKey => (
+                      <div key={metricKey} className="chart-box p-6 rounded-lg">
+                          <DashboardChart
+                            title={metricKey.split('_').join(' ')}
+                            data={chartDataGrouped[metricKey]}
+                          />
+                      </div>
+                    ))
+                )}
+            </div>
+        </section>
 
-      
-      {/* --- 7. TABELA DE ANOMALIAS (Logs Estruturados) --- */}
-      <section>
-          <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">
-              Logs de Anomalias (Para Diagnóstico)
-          </h2>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-neon">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ticket ID</th> 
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Tipo</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAnomalias.map((a, index) => {
-                  const statusInfo = STATUS_MAP[a.status] || STATUS_MAP.TICKET_ABERTO;
-                  
-                  const needsEscalation = a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA';
-                  
-                  return (
-                    <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
-                      
-                      <td className="py-3 px-4 text-blue-400 font-medium">{a.ticket_id || 'N/A'}</td>
+        
+        {/* --- 7. TABELA DE ANOMALIAS (Logs Estruturados) --- */}
+        <section>
+            <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">
+                Logs de Anomalias (Para Diagnóstico)
+            </h2>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-neon">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ticket ID</th> 
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Tipo</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAnomalias.map((a, index) => {
+                    const statusInfo = STATUS_MAP[a.status] || STATUS_MAP.TICKET_ABERTO;
+                    
+                    const needsEscalation = a.status === 'TICKET_ABERTO' || a.status === 'CORRIGIDO_FALHA';
+                    
+                    return (
+                      <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
+                        
+                        <td className="py-3 px-4 text-blue-400 font-medium">{a.ticket_id || 'N/A'}</td>
 
-                      <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
-                      <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
-                      <td className="py-3 px-4 text-gray-300">
-                        {new Date(a.timestamp).toLocaleString('pt-BR', { 
-                          timeZone: 'America/Sao_Paulo', 
-                          day: '2-digit', 
-                          month: '2-digit', 
-                          year: 'numeric',
-                          hour: '2-digit', 
-                          minute: '2-digit', 
-                          second: '2-digit' 
-                        })}
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.class}`}>
-                          {statusInfo.text}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 flex flex-col space-y-1">
-                        <button 
-                          onClick={() => openLogModal(a.logID)} 
-                          className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
-                          disabled={!a.logID}
-                        >
-                          Ver Log
-                        </button>
-                        {needsEscalation && (
-                            <button
-                                onClick={() => handleEscalation(a)}
-                                className="text-red-400 hover:text-red-300 font-medium text-xs underline mt-1"
-                            >
-                                Escalonar (Manual)
-                            </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-      </section>
+                        <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
+                        <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {new Date(a.timestamp).toLocaleString('pt-BR', { 
+                            timeZone: 'America/Sao_Paulo', 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric',
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            second: '2-digit' 
+                          })}
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.class}`}>
+                            {statusInfo.text}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 flex flex-col space-y-1">
+                          <button 
+                            onClick={() => openLogModal(a.logID)} 
+                            className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
+                            disabled={!a.logID}
+                          >
+                            Ver Log
+                          </button>
+                          {needsEscalation && (
+                              <button
+                                  onClick={() => handleEscalation(a)}
+                                  className="text-red-400 hover:text-red-300 font-medium text-xs underline mt-1"
+                              >
+                                  Escalonar (Manual)
+                              </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+        </section>
+      </div> {/* Fim do Conteúdo Principal */}
     </div>
   );
 }
