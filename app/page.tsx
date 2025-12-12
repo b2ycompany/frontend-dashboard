@@ -5,21 +5,22 @@ import { db } from '../utils/firebaseConfig';
 import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
-import dynamic from 'next/dynamic'; 
-
-// Importa os componentes de visualização
-import DashboardChart from '../components/DashboardChart'; 
+import dynamic from 'next/dynamic';
 import FlowMap from '../components/FlowMap'; 
 import LogModal from '../components/LogModal'; 
-import ExecutiveDashboard from '../components/ExecutiveDashboard';
+import ExecutiveDashboard from '../components/ExecutiveDashboard'; 
+import DashboardChart from '../components/DashboardChart';
 
-// Importação Dinâmica para SSR
+// -----------------------------------------------------------------
+// CORREÇÃO: Cria o wrapper do Dashboard Executivo AQUI para o dynamic import
+// -----------------------------------------------------------------
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
   ssr: false, 
 });
+// -----------------------------------------------------------------
 
 
-// Interface ajustada
+// Interface ajustada para incluir client_id
 interface Anomalia extends DocumentData {
   timestamp: string;
   metricName: string;
@@ -29,38 +30,22 @@ interface Anomalia extends DocumentData {
   status: 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO';
   logID: string; 
   data_type: string;
-  client_id: string; 
+  client_id: string; // CAMPO CRÍTICO PARA O FILTRO
 }
 
 const ALL_CLIENTS = 'TODOS_CLIENTES';
 const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRANSACAO', 'FLUXO_SINISTRO', 'INFRA_DB_LOCKS'];
 
-// Componente de Card (Design Clean e Focado)
-const Card: React.FC<{ title: string, value: number, status?: 'PENDENTE' | 'CORRIGIDO' | 'TOTAL' }> = ({ title, value, status }) => {
-    let colorClass = "text-gray-900";
-    let bgClass = "bg-white";
-
-    if (status === 'PENDENTE') {
-        colorClass = "text-red-600";
-        bgClass = "bg-red-50";
-    } else if (status === 'CORRIGIDO') {
-        colorClass = "text-green-600";
-        bgClass = "bg-green-50";
-    } else {
-        colorClass = "text-blue-600";
-        bgClass = "bg-white";
-    }
-
-    return (
-        // Design Light: Borda fina e sombra média para profundidade
-        <div className={`${bgClass} p-6 rounded-xl border-l-4 border-gray-200 shadow-md transition duration-300 hover:shadow-lg`}>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className="text-4xl font-extrabold mt-2">
-                <span className={colorClass}>{value}</span>
-            </p>
-        </div>
-    );
-};
+// Componente de Card (Tema Neon)
+const Card: React.FC<{ title: string, value: number }> = ({ title, value }) => (
+  // Tema Neon: bg-gray-900, border-neon, shadow-neon
+  <div className={`bg-gray-900 p-6 rounded-lg border-neon shadow-sm shadow-cyan-500/20 transition duration-300 hover-neon`}>
+    <p className="text-sm font-medium text-gray-400">{title}</p>
+    <p className="text-4xl font-extrabold mt-2 text-white">
+        <span className="text-cyan-400">{value}</span>
+    </p>
+  </div>
+);
 
 
 export default function Home() {
@@ -130,29 +115,35 @@ export default function Home() {
 
 
   const openLogModal = (logID: string) => {
-    setIsLogModalOpen(logID);
+    setIsLogModalOpen(logID); // Abre o modal com o Log ID selecionado
   };
 
-  // Funções de manipulação de filtro OTIMIZADAS PARA O MAPA
+  // Funções de manipulação de filtro
   const handleClientSelect = (client: string) => {
       setSelectedClient(client);
-      if (client !== ALL_CLIENTS && filterType === 'TODOS' && FILTER_TYPES.length > 1) {
-          setFilterType(FILTER_TYPES.find(type => type !== 'TODOS') || 'TODOS'); 
+      // Se um cliente for selecionado, mas o filtro de tipo ainda for 'TODOS', 
+      // podemos tentar selecionar o primeiro tipo para exibir o mapa.
+      if (filterType === 'TODOS' && client !== ALL_CLIENTS && FILTER_TYPES.length > 1) {
+          setFilterType(FILTER_TYPES[1]); 
       }
   };
 
   const handleFlowTypeSelect = (type: string) => {
     setFilterType(type);
-    if (type !== 'TODOS' && selectedClient === ALL_CLIENTS && clients.length > 1) {
-        setSelectedClient(clients.find(client => client !== ALL_CLIENTS) || ALL_CLIENTS);
+    // Se um tipo for selecionado, mas o cliente ainda for 'TODOS',
+    // podemos tentar selecionar o primeiro cliente para exibir o mapa.
+    if (selectedClient === ALL_CLIENTS && clients.length > 1) {
+        setSelectedClient(clients[1]);
     }
   };
 
 
   return (
-    // NOVO TEMA: Fundo cinza claro
-    <div className="min-h-screen bg-gray-50 p-8 text-gray-900"> 
+    // TEMA DARK BASE
+    <div className="min-h-screen bg-gray-950 p-6 text-gray-100"> 
         
+      {/* RENDERIZA O MODAL DE LOGS SE HOUVER UM ID SELECIONADO */}
+      {/* IMPLEMENTAÇÃO DA FUNCIONALIDADE DE MODAL */}
       {isLogModalOpen && (
           <LogModal 
               logID={isLogModalOpen} 
@@ -163,33 +154,29 @@ export default function Home() {
       {/* ========================================================= */}
       {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
       {/* ========================================================= */}
-      <header className="flex justify-start items-center mb-10">
-          <h1 className="text-5xl font-extrabold text-gray-900 tracking-wider">
-              Painel de Monitoramento Multicliente
+      <header className="flex justify-start items-center mb-6">
+          <h1 className="text-4xl font-extrabold text-cyan-400 tracking-wider">
+              Painel de Monitoramento Multicliente (AIOps)
           </h1>
-          <span className="text-lg font-medium text-blue-600 ml-4 border border-blue-200 bg-blue-50 px-3 py-1 rounded-full">
-            AIOps Engine
-          </span>
       </header>
 
       {/* --- FILTROS & KPIs (Seção Superior Otimizada) --- */}
-      <section className="space-y-6 mb-12">
+      <section className="space-y-6 mb-8">
           
-          {/* BLOCo 1: SELEÇÃO DE CLIENTE (Controles em Abas/Pills) */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                  1. Seleção de Contas Monitoradas
+          {/* BLOCo 1: SELEÇÃO DE CLIENTE (Melhoria de UX/UI) */}
+          <div className="bg-gray-900 p-4 rounded-lg border-neon shadow-sm shadow-cyan-500/20">
+              <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
+                  1. Seleção de Clientes
               </h3>
-              <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-lg border border-gray-200">
+              <div className="flex flex-wrap gap-2">
                   {clients.map((client) => (
                     <button
                       key={client}
                       onClick={() => handleClientSelect(client)}
-                      // CONTROLES MODERNOS (PILLS): Fundo e texto em destaque
-                      className={`px-4 py-2 rounded-lg text-base font-medium transition duration-200 
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition duration-150 border 
                         ${selectedClient === client 
-                          ? 'bg-blue-600 text-white shadow-md' // Selecionado: Azul Sólido
-                          : 'bg-transparent text-gray-600 hover:bg-white' // Não Selecionado: Transparente/Clean
+                          ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/40' 
+                          : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
                         }`}
                     >
                       {client.replace('_', ' ')}
@@ -199,23 +186,23 @@ export default function Home() {
           </div>
           
           {/* BLOCo 2: FILTROS DE FLUXO E KPIs (Horizontal) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               
               {/* Coluna 1: Filtros de Tipo */}
-              <div className="lg:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-lg">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-700">
-                      2. Seleção de Jornada
+              <div className="lg:col-span-1 bg-gray-900 p-4 rounded-lg border-neon shadow-sm shadow-cyan-500/20">
+                  <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
+                      2. Seleção de Fluxo (Ativa Mapa)
                   </h3>
                   <div className="flex flex-col space-y-2">
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
+                          // MUDANÇA: Usa a nova função que também tenta selecionar um cliente
                           onClick={() => handleFlowTypeSelect(type)}
-                          // CONTROLES MODERNOS (PILLS VERTICAIS)
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition duration-200 
+                          className={`w-full text-left px-3 py-1 rounded-md text-sm font-medium transition duration-150 border 
                             ${filterType === type 
-                              ? 'bg-blue-100 text-blue-800 border-l-4 border-blue-600' // Selecionado: Fundo claro + Borda lateral
-                              : 'bg-white text-gray-700 hover:bg-gray-50' // Não Selecionado: Fundo clean
+                              ? 'bg-cyan-600 text-white border-cyan-500' 
+                              : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
                             }`}
                         >
                           {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
@@ -225,64 +212,61 @@ export default function Home() {
               </div>
 
               {/* Colunas 2-4: KPIs */}
-              <div className="lg:col-span-3 grid grid-cols-3 gap-8">
-                  <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} status="TOTAL"/>
-                  <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} status="PENDENTE"/>
-                  <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} status="CORRIGIDO"/>
+              <div className="lg:col-span-3 grid grid-cols-3 gap-6">
+                  <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} />
+                  <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} />
+                  <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} />
               </div>
           </div>
 
       </section>
       
-      {/* --- DASHBOARD EXECUTIVO --- */}
-      <section className="space-y-6 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
-              3. Indicadores Executivos (Visão Gerencial)
+      {/* --- DASHBOARD EXECUTIVO (Indicadores de Nível Milionário) --- */}
+      <section className="space-y-8 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+              3. Indicadores Executivos e Visualizações
           </h2>
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
+          <div className="bg-gray-900 p-6 rounded-lg border-neon shadow-xl shadow-cyan-500/20">
+              {/* Integra o Dashboard Executivo (Gráficos, Barra, Donut/Pie) */}
               <ExecutiveDashboardClient anomalias={filteredAnomalias} />
           </div>
       </section>
       
       {/* --- MAPA DE FLUXO E ARQUITETURA --- */}
-      <section className="space-y-6 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
+      <section className="space-y-8 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
               4. Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
           </h2>
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
-              {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
-                  <FlowMap 
-                      client={selectedClient}
-                      flowType={filterType}
-                      anomalies={mapAnomalies}
-                  />
-              ) : (
-                  <div className="text-gray-500 p-4 text-center">
-                      Selecione um **Cliente** e um **Tipo de Fluxo** para visualizar o mapa de arquitetura.
-                  </div>
-              )}
-          </div>
+          {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
+              <FlowMap 
+                  client={selectedClient}
+                  flowType={filterType}
+                  anomalies={mapAnomalies}
+              />
+          ) : (
+              <div className="bg-gray-900 p-6 rounded-lg text-gray-400 border-neon">
+                  Selecione um **Cliente E** um **Tipo de Fluxo** específico (acima) para visualizar o mapa de arquitetura.
+              </div>
+          )}
       </section>
       
       {/* --- GRÁFICOS (Time Series e Performance) --- */}
-      <section className="space-y-6 mb-12">
-          <h2 className="text-2xl font-semibold text-gray-700 border-b border-gray-300 pb-2">
-              5. Análise Gráfica de Tendência (Time Series)
+      <section className="space-y-8 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
+              5. Análise Gráfica de Performance (Time Series)
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.keys(chartDataGrouped).length === 0 ? (
-                  <div className="p-6 bg-white rounded-xl text-center text-gray-500 border border-gray-200 md:col-span-2 shadow-lg">
-                      Nenhuma anomalia filtrada para plotar os gráficos.
+                  <div className="p-6 bg-gray-900 rounded-lg text-center text-gray-400 border-neon md:col-span-2">
+                      Nenhuma anomalia filtrada para plotar os gráficos de série temporal.
                   </div>
               ) : (
-                  // CONTAINER BRANCO PARA CADA GRÁFICO INDIVIDUAL
                   Object.keys(chartDataGrouped).map(metricKey => (
-                    <div key={metricKey} className="bg-white p-6 rounded-xl border border-gray-200 shadow-lg">
-                        <DashboardChart
-                          title={metricKey.split('_').join(' ')}
-                          data={chartDataGrouped[metricKey]}
-                        />
-                    </div>
+                    <DashboardChart
+                      key={metricKey}
+                      title={metricKey.split('_').join(' ')}
+                      data={chartDataGrouped[metricKey]}
+                    />
                   ))
               )}
           </div>
@@ -291,30 +275,29 @@ export default function Home() {
       
       {/* --- TABELA DE ANOMALIAS (Logs Estruturados) --- */}
       <section>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b border-gray-300 pb-2">
-              6. Logs de Anomalias (Para Diagnóstico)
+          <h2 className="text-2xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">
+              6. Anomalias Filtradas ({filteredAnomalias.length})
           </h2>
           
           <div className="overflow-x-auto">
-            {/* TABELA COM FUNDO BRANCO E CORES DE STATUS CLARAS */}
-            <table className="min-w-full bg-white shadow-xl rounded-lg border border-gray-200">
-              <thead className="bg-gray-100">
+            <table className="min-w-full bg-gray-900 shadow-xl rounded-lg border-neon">
+              <thead className="bg-gray-800">
                 <tr>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Cliente</th> 
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Tipo</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Timestamp (BR)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Métrica</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Causa Raiz (IA)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Status Robô</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700">Log</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Tipo</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Métrica</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status Robô</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Log</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredAnomalias.map((a, index) => (
-                  <tr key={a.logID || index} className="border-b border-gray-200 hover:bg-gray-50 transition duration-150">
-                    <td className="py-3 px-4 font-bold text-gray-800">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
-                    <td className="py-3 px-4 text-gray-600">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
-                    <td className="py-3 px-4 text-gray-600">
+                  <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
+                    <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
+                    <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
+                    <td className="py-3 px-4 text-gray-300">
                       {new Date(a.timestamp).toLocaleString('pt-BR', { 
                         timeZone: 'America/Sao_Paulo', 
                         day: '2-digit', 
@@ -325,20 +308,20 @@ export default function Home() {
                         second: '2-digit' 
                       })}
                     </td>
-                    <td className="py-3 px-4 text-gray-600">{a.metricName} ({a.value.toFixed(2)})</td>
-                    <td className="py-3 px-4 text-gray-600">{a.causaRaiz}</td>
+                    <td className="py-3 px-4 text-gray-300">{a.metricName} ({a.value.toFixed(2)})</td>
+                    <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
                     <td className="py-3 px-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold 
-                        ${a.status === 'CORRIGIDO' ? 'bg-green-100 text-green-700' : 
-                          a.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        } shadow-sm`}>
+                        ${a.status === 'CORRIGIDO' ? 'bg-green-600 text-white' : 
+                          a.status === 'PENDENTE' ? 'bg-yellow-600 text-gray-900' : 'bg-red-600 text-white'
+                        } shadow-md`}>
                         {a.status}
                       </span>
                     </td>
                     <td className="py-3 px-4">
                       <button 
                         onClick={() => openLogModal(a.logID)} 
-                        className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                        className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
                         disabled={!a.logID}
                       >
                         Ver Log
