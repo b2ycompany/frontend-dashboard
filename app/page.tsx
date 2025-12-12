@@ -13,13 +13,10 @@ import FlowMap from '../components/FlowMap';
 import LogModal from '../components/LogModal'; 
 import ExecutiveDashboard from '../components/ExecutiveDashboard';
 
-// -----------------------------------------------------------------
-// Importação Dinâmica para SSR
-// -----------------------------------------------------------------
+// Importação Dinâmica para SSR (Gráfico de Barras)
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
   ssr: false, 
 });
-// -----------------------------------------------------------------
 
 
 // Interface ajustada para incluir client_id
@@ -32,7 +29,7 @@ interface Anomalia extends DocumentData {
   status: 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO';
   logID: string; 
   data_type: string;
-  client_id: string; // CAMPO CRÍTICO PARA O FILTRO
+  client_id: string; 
 }
 
 const ALL_CLIENTS = 'TODOS_CLIENTES';
@@ -169,11 +166,11 @@ export default function Home() {
                     <button
                       key={client}
                       onClick={() => handleClientSelect(client)}
-                      // BOTÃO CLIENTE: Efeito de Borda Neon e Sombra Ciano
+                      // BOTÃO CLIENTE: Cor Sólida e Glow ao Selecionar
                       className={`px-5 py-2.5 rounded-lg text-lg font-bold tracking-wider transition duration-200 
                         ${selectedClient === client 
-                          ? 'bg-cyan-700/60 text-white border-neon shadow-cyan-500/50 pulse-cyan' // Selecionado: Forte brilho neon/pulso
-                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' // Não Selecionado: Fundo escuro
+                          ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
+                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
                         }`}
                     >
                       {client.replace('_', ' ')}
@@ -195,11 +192,11 @@ export default function Home() {
                         <button
                           key={type}
                           onClick={() => handleFlowTypeSelect(type)}
-                          // BOTÃO FLUXO: Efeito de Borda Neon e Sombra Ciano
+                          // BOTÃO FLUXO: Cor Sólida e Glow ao Selecionar
                           className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
                             ${filterType === type 
-                              ? 'bg-cyan-700/60 text-white border-neon shadow-cyan-500/50 pulse-cyan' // Selecionado: Forte brilho neon/pulso
-                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' // Não Selecionado: Fundo escuro
+                              ? 'bg-cyan-600 text-white border-neon shadow-cyan-500/50 pulse-cyan' 
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' 
                             }`}
                         >
                           {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
@@ -280,7 +277,6 @@ export default function Home() {
           </h2>
           
           <div className="overflow-x-auto">
-            {/* Usa o estilo de tabela 'table-neon' */}
             <table className="min-w-full table-neon">
               <thead className="bg-gray-800">
                 <tr>
