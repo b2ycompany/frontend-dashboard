@@ -2,185 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =======================================================
-   🟣 TEMA FUTURISTA NEON GLOBAL
-   ======================================================= */
+:root{
+  --bg-900: #020617;
+  --glass-900: rgba(3,7,18,0.6);
+  --neon-cyan: #06b6d4;
+  --neon-cyan-strong: #22d3ee;
+  --neon-green: #10b981;
+}
 
+/* Base */
 html, body {
-  background: #020617; /* quase preto, substitui o cinza padrão */
+  background: var(--bg-900);
   color: #e2e8f0;
   min-height: 100%;
   scroll-behavior: smooth;
-  font-family: var(--font-geist-sans);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-/* =======================================================
-   🔥 SCROLLBAR FUTURISTA
-   ======================================================= */
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Animated gradient background */
+.app-gradient {
+  background: linear-gradient(120deg, rgba(2,6,23,0.5), rgba(3,7,18,0.85));
+  background-size: 400% 400%;
+  animation: gradientShift 14s ease infinite;
+}
+@keyframes gradientShift {
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
 }
 
-::-webkit-scrollbar-track {
-  background: #0f172a;
-  border-radius: 10px;
+/* Logo circular prominent */
+.logo-hero{
+  width: 120px;
+  height: 120px;
+  border-radius: 9999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: radial-gradient(ellipse at 30% 20%, rgba(34,211,238,0.08), transparent 30%), rgba(6,7,20,0.6);
+  border: 2px solid rgba(34,211,238,0.18);
+  box-shadow: 0 10px 30px rgba(6,182,212,0.12), inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.logo-hero:hover{ transform: translateY(-6px) scale(1.03); box-shadow: 0 18px 40px rgba(34,211,238,0.18); }
+.logo-hero img{ width:84%; height:84%; object-fit:contain; border-radius:9999px; }
+
+/* XL variant */
+.logo-hero.xl{ width:160px; height:160px; }
+
+/* Neon border util */
+.border-neon { border: 1px solid rgba(34,211,238,0.18); box-shadow: 0 0 18px rgba(34,211,238,0.08); }
+
+/* Header */
+.header-panel{
+  background: linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.4));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #06b6d4;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #22d3ee;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #0ea5e9;
-}
-
-/* =======================================================
-   🔥 BORDAS NEON (UTILIZADAS EM TUDO)
-   ======================================================= */
-
-.border-neon {
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  box-shadow:
-    0 0 15px rgba(34, 211, 238, 0.15),
-    inset 0 0 10px rgba(34, 211, 238, 0.05);
-  transition: 0.3s ease-in-out;
-}
-
-.hover-neon:hover {
-  border-color: #22d3ee;
-  box-shadow:
-    0 0 20px rgba(34, 211, 238, 0.45),
-    inset 0 0 12px rgba(34, 211, 238, 0.15);
-  transform: translateY(-2px);
-}
-
-/* =======================================================
-   🔥 ANIMAÇÕES - GLOW / PULSE
-   ======================================================= */
-
-@keyframes pulse-red {
-  0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.9); }
-  100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
-}
-
-@keyframes pulse-green {
-  0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.9); }
-  100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
-}
-
-@keyframes pulse-cyan {
-  0% { box-shadow: 0 0 5px rgba(6, 182, 212, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(6, 182, 212, 1); }
-  100% { box-shadow: 0 0 5px rgba(6, 182, 212, 0.3); }
-}
-
-.pulse-red {
-  animation: pulse-red 1.4s infinite;
-}
-
-.pulse-green {
-  animation: pulse-green 1.4s infinite;
-}
-
-.pulse-cyan {
-  animation: pulse-cyan 1.4s infinite;
-}
-
-/* =======================================================
-   🔥 CARDS FUTURISTAS (KPIs)
-   ======================================================= */
-
+/* Cards */
 .card-neon {
-  background: rgba(3, 7, 18, 0.6);
-  backdrop-filter: blur(25px);
-  border-radius: 14px;
-  padding: 1.5rem;
-  border: 1px solid rgba(34, 211, 238, 0.25);
-  box-shadow: 0 0 15px rgba(14, 165, 233, 0.25);
-  transition: 0.25s ease;
+  background: rgba(3,7,18,0.55);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 1px solid rgba(34,211,238,0.12);
+  box-shadow: 0 6px 24px rgba(6,182,212,0.06);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.card-neon:hover{ transform: translateY(-6px); box-shadow: 0 20px 50px rgba(6,182,212,0.14); }
+
+.kpi-number{ font-weight:800; font-size:1.9rem; letter-spacing:-0.02em; }
+.kpi-sub{ color: rgba(226,232,240,0.7); font-size:0.9rem; }
+
+/* Table */
+.table-neon{ width:100%; border-collapse:collapse; }
+.table-neon thead th{ text-align:left; padding:12px 14px; text-transform:uppercase; font-size:0.75rem; color:var(--neon-cyan-strong); border-bottom:1px solid rgba(255,255,255,0.02); }
+.table-neon tbody td{ padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.03); }
+
+/* Status dot */
+.status-dot{ width:10px; height:10px; border-radius:9999px; display:inline-block; margin-right:8px; box-shadow:0 0 8px rgba(0,0,0,0.2); }
+
+/* Tooltip */
+.tooltip{ position:relative; }
+.tooltip:hover::after{
+  content: attr(data-tip);
+  position:absolute;
+  bottom: -38px;
+  left:0;
+  background: rgba(2,6,23,0.9);
+  color:#cdeff5;
+  padding:6px 8px;
+  font-size:12px;
+  border-radius:6px;
+  white-space:nowrap;
+  box-shadow:0 8px 30px rgba(2,6,23,0.6);
 }
 
-.card-neon:hover {
-  transform: translateY(-3px);
-  box-shadow: 
-    0 0 20px rgba(14, 165, 233, 0.45),
-    0 0 40px rgba(14, 165, 233, 0.15) inset;
+/* Pulse animation */
+@keyframes pulse-cyan {
+  0%{ box-shadow: 0 0 5px rgba(6,182,212,0.25);}
+  50%{ box-shadow:0 0 20px rgba(6,182,212,0.85);}
+  100%{ box-shadow:0 0 5px rgba(6,182,212,0.25);}
 }
+.pulse-cyan{ animation: pulse-cyan 1.6s infinite; }
 
-/* =======================================================
-   🔥 TABELAS FUTURISTAS
-   ======================================================= */
+/* Focus outline */
+:focus{ outline: 3px solid rgba(34,211,238,0.12); outline-offset:3px; }
 
-.table-neon {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(34, 211, 238, 0.18);
-  box-shadow: 0 0 15px rgba(34, 211, 238, 0.12);
-  border-radius: 10px;
-}
-
-.table-neon th {
-  background: rgba(6, 182, 212, 0.12);
-  color: #67e8f9;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.table-neon tr:hover {
-  background: rgba(34, 211, 238, 0.08);
-}
-
-/* =======================================================
-   🔥 GRAFICOS - CAIXA DO RECHARTS
-   ======================================================= */
-
-.chart-box {
-  background: rgba(3, 7, 18, 0.65);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  backdrop-filter: blur(18px);
-  border-radius: 14px;
-  padding: 1.5rem;
-  box-shadow:
-    0 0 25px rgba(6, 182, 212, 0.25),
-    inset 0 0 10px rgba(6, 182, 212, 0.1);
-}
-
-/* =======================================================
-   🔥 SIDEBAR (Painel de Logs)
-   ======================================================= */
-
-.sidebar-neon {
-  background: rgba(3, 7, 18, 0.75);
-  border-left: 1px solid rgba(34, 211, 238, 0.35);
-  box-shadow: -4px 0 25px rgba(34, 211, 238, 0.12),
-              inset 0 0 12px rgba(34, 211, 238, 0.08);
-  backdrop-filter: blur(22px);
-}
-
-/* =======================================================
-   🔥 BADGES DE STATUS (Robô)
-   ======================================================= */
-
-.badge-green {
-  background: rgba(16, 185, 129, 0.25);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.55);
-}
-
-.badge-yellow {
-  background: rgba(234, 179, 8, 0.25);
-  color: #facc15;
-  border: 1px solid rgba(234, 179, 8, 0.55);
-}
-
-.badge-red {
-  background: rgba(239, 68, 68, 0.25);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.55);
-}
+/* Responsive tweak */
+@media(min-width:1024px){ .logo-hero{ width:140px; height:140px; } }
