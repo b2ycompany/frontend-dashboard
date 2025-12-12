@@ -23,13 +23,15 @@ interface FlowStep {
   description?: string;
 }
 
+interface AnomaliaData {
+    host: string;
+    status: "PENDENTE" | "CORRIGIDO" | "FALHA_CORRECAO";
+}
+
 interface FlowMapProps {
   client: string;
   flowType: string;
-  anomalies: {
-    host: string;
-    status: "PENDENTE" | "CORRIGIDO" | "FALHA_CORRECAO";
-  }[];
+  anomalies: AnomaliaData[];
 }
 
 // =========================
@@ -40,24 +42,27 @@ export default function FlowMap({ client, flowType, anomalies }: FlowMapProps) {
   const [selectedLogID, setSelectedLogID] = useState<string | null>(null); 
 
   // =========================
-  // Carregar Fluxo do Firestore (Seu fluxo de passos da jornada)
+  // Carregar Fluxo do Firestore (Passos da Jornada)
   // =========================
   useEffect(() => {
-    const path = `flow_steps/${flowType}`; 
+    // Busca os passos na coleção 'flow_steps' com base no tipo de fluxo (ex: FLUXO_ONBOARDING)
+    const path = `flow_steps/${flowType}/steps`; 
 
-    const q = query(collection(db, path), orderBy("order", "asc"));
+    if (db) {
+        const q = query(collection(db, path), orderBy("order", "asc"));
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const list: FlowStep[] = [];
-        snapshot.forEach((doc) => list.push(doc.data() as FlowStep));
-        setSteps(list);
-      },
-      (err) => console.error("Erro ao carregar fluxo:", err)
-    );
+        const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+            const list: FlowStep[] = [];
+            snapshot.forEach((doc) => list.push(doc.data() as FlowStep));
+            setSteps(list);
+        },
+        (err) => console.error(`Erro ao carregar passos do fluxo ${flowType}:`, err)
+        );
 
-    return () => unsubscribe();
+        return () => unsubscribe();
+    }
   }, [flowType]);
 
   // =========================
@@ -87,7 +92,7 @@ export default function FlowMap({ client, flowType, anomalies }: FlowMapProps) {
       <div className="flex flex-row items-center justify-center space-x-10 overflow-x-auto py-6">
 
         {steps.length === 0 && (
-             <p className="text-gray-400">Carregando mapa ou passos de fluxo n&atilde;o encontrados na cole&ccedil;&atilde;o &apos;flow_steps/{flowType}&apos;.</p>
+             <p className="text-gray-400">Carregando mapa ou passos de fluxo n&atilde;o encontrados. Verifique a cole&ccedil;&atilde;o &apos;flow_steps/{flowType}&apos; no Firestore.</p>
         )}
 
         {steps.map((step, index) => (

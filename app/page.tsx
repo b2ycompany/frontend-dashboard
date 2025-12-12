@@ -5,14 +5,16 @@ import { db } from '../utils/firebaseConfig';
 import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
-import dynamic from 'next/dynamic';
+import dynamic from 'next/dynamic'; 
+
+// Importa os componentes de visualização
+import DashboardChart from '../components/DashboardChart'; 
 import FlowMap from '../components/FlowMap'; 
 import LogModal from '../components/LogModal'; 
 import ExecutiveDashboard from '../components/ExecutiveDashboard'; 
-import DashboardChart from '../components/DashboardChart';
 
 // -----------------------------------------------------------------
-// CORREÇÃO: Cria o wrapper do Dashboard Executivo AQUI para o dynamic import
+// CORREÇÃO CRÍTICA DO MÓDULO: Cria o wrapper do Dashboard Executivo AQUI
 // -----------------------------------------------------------------
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
   ssr: false, 
@@ -38,7 +40,6 @@ const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRAN
 
 // Componente de Card (Tema Neon)
 const Card: React.FC<{ title: string, value: number }> = ({ title, value }) => (
-  // Tema Neon: bg-gray-900, border-neon, shadow-neon
   <div className={`bg-gray-900 p-6 rounded-lg border-neon shadow-sm shadow-cyan-500/20 transition duration-300 hover-neon`}>
     <p className="text-sm font-medium text-gray-400">{title}</p>
     <p className="text-4xl font-extrabold mt-2 text-white">
@@ -118,22 +119,20 @@ export default function Home() {
     setIsLogModalOpen(logID); // Abre o modal com o Log ID selecionado
   };
 
-  // Funções de manipulação de filtro
+  // Funções de manipulação de filtro OTIMIZADAS PARA O MAPA
   const handleClientSelect = (client: string) => {
       setSelectedClient(client);
-      // Se um cliente for selecionado, mas o filtro de tipo ainda for 'TODOS', 
-      // podemos tentar selecionar o primeiro tipo para exibir o mapa.
-      if (filterType === 'TODOS' && client !== ALL_CLIENTS && FILTER_TYPES.length > 1) {
-          setFilterType(FILTER_TYPES[1]); 
+      // UX: Se um cliente for selecionado, e houver dados, tenta focar em um fluxo específico.
+      if (client !== ALL_CLIENTS && filterType === 'TODOS' && FILTER_TYPES.length > 1) {
+          setFilterType(FILTER_TYPES.find(type => type !== 'TODOS') || 'TODOS'); 
       }
   };
 
   const handleFlowTypeSelect = (type: string) => {
     setFilterType(type);
-    // Se um tipo for selecionado, mas o cliente ainda for 'TODOS',
-    // podemos tentar selecionar o primeiro cliente para exibir o mapa.
-    if (selectedClient === ALL_CLIENTS && clients.length > 1) {
-        setSelectedClient(clients[1]);
+    // UX: Se um fluxo for selecionado, e houver clientes, tenta focar no primeiro cliente válido.
+    if (type !== 'TODOS' && selectedClient === ALL_CLIENTS && clients.length > 1) {
+        setSelectedClient(clients.find(client => client !== ALL_CLIENTS) || ALL_CLIENTS);
     }
   };
 
@@ -143,7 +142,6 @@ export default function Home() {
     <div className="min-h-screen bg-gray-950 p-6 text-gray-100"> 
         
       {/* RENDERIZA O MODAL DE LOGS SE HOUVER UM ID SELECIONADO */}
-      {/* IMPLEMENTAÇÃO DA FUNCIONALIDADE DE MODAL */}
       {isLogModalOpen && (
           <LogModal 
               logID={isLogModalOpen} 
@@ -197,7 +195,6 @@ export default function Home() {
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
-                          // MUDANÇA: Usa a nova função que também tenta selecionar um cliente
                           onClick={() => handleFlowTypeSelect(type)}
                           className={`w-full text-left px-3 py-1 rounded-md text-sm font-medium transition duration-150 border 
                             ${filterType === type 
@@ -237,6 +234,7 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
               4. Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
           </h2>
+          {/* O Mapa só aparece se Cliente E Fluxo NÃO forem TODOS */}
           {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
               <FlowMap 
                   client={selectedClient}
@@ -245,7 +243,7 @@ export default function Home() {
               />
           ) : (
               <div className="bg-gray-900 p-6 rounded-lg text-gray-400 border-neon">
-                  Selecione um **Cliente E** um **Tipo de Fluxo** específico (acima) para visualizar o mapa de arquitetura.
+                  Selecione um **Cliente E** um **Tipo de Fluxo** (acima) para visualizar o mapa de arquitetura.
               </div>
           )}
       </section>
