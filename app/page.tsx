@@ -177,14 +177,14 @@ export default function Home() {
       <header className="bg-gray-900 border-b border-gray-800 shadow-xl py-6 mb-8 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 flex flex-col items-center justify-center">
               
-              {/* Contêiner do Logo com Efeito Neon */}
+              {/* Contêiner do Logo com Efeito Neon (AGORA REDONDO) */}
               <div className="flex flex-col items-center justify-center mb-4 space-y-2">
-                  <div className="p-2 border-neon pulse-cyan rounded-xl shadow-cyan-500/50">
+                  <div className="p-3 border-neon pulse-cyan rounded-full shadow-cyan-500/50 flex items-center justify-center bg-gray-800">
                       <Image 
                         src="/logo_lr_monitor.jpeg" 
                         alt="LR Monitor Logo" 
-                        width={300} // Aumento MAIOR (300%)
-                        height={60}  // Aumento MAIOR
+                        width={350} // Aumento MAIOR (350px)
+                        height={70}  // Aumento MAIOR (70px)
                         priority={true} 
                         style={{ objectFit: 'contain' }} // Garante que a imagem não seja achatada
                       /> 
