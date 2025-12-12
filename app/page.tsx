@@ -5,14 +5,16 @@ import { db } from '../utils/firebaseConfig';
 import { collection, query, orderBy, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
-import dynamic from 'next/dynamic';
+import dynamic from 'next/dynamic'; 
+
+// Importa os componentes de visualização
+import DashboardChart from '../components/DashboardChart'; 
 import FlowMap from '../components/FlowMap'; 
 import LogModal from '../components/LogModal'; 
-import ExecutiveDashboard from '../components/ExecutiveDashboard'; 
-import DashboardChart from '../components/DashboardChart';
+import ExecutiveDashboard from '../components/ExecutiveDashboard';
 
 // -----------------------------------------------------------------
-// CORREÇÃO: Cria o wrapper do Dashboard Executivo AQUI para o dynamic import
+// Importação Dinâmica para SSR
 // -----------------------------------------------------------------
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
   ssr: false, 
@@ -38,8 +40,8 @@ const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRAN
 
 // Componente de Card (Tema Neon)
 const Card: React.FC<{ title: string, value: number }> = ({ title, value }) => (
-  // Tema Neon: bg-gray-900, border-neon, shadow-neon
-  <div className={`bg-gray-900 p-6 rounded-lg border-neon shadow-sm shadow-cyan-500/20 transition duration-300 hover-neon`}>
+  // Usa o estilo 'card-neon' do globals.css
+  <div className={`card-neon p-6 rounded-xl transition duration-300`}>
     <p className="text-sm font-medium text-gray-400">{title}</p>
     <p className="text-4xl font-extrabold mt-2 text-white">
         <span className="text-cyan-400">{value}</span>
@@ -115,25 +117,21 @@ export default function Home() {
 
 
   const openLogModal = (logID: string) => {
-    setIsLogModalOpen(logID); // Abre o modal com o Log ID selecionado
+    setIsLogModalOpen(logID);
   };
 
-  // Funções de manipulação de filtro
+  // Funções de manipulação de filtro OTIMIZADAS PARA O MAPA
   const handleClientSelect = (client: string) => {
       setSelectedClient(client);
-      // Se um cliente for selecionado, mas o filtro de tipo ainda for 'TODOS', 
-      // podemos tentar selecionar o primeiro tipo para exibir o mapa.
-      if (filterType === 'TODOS' && client !== ALL_CLIENTS && FILTER_TYPES.length > 1) {
-          setFilterType(FILTER_TYPES[1]); 
+      if (client !== ALL_CLIENTS && filterType === 'TODOS' && FILTER_TYPES.length > 1) {
+          setFilterType(FILTER_TYPES.find(type => type !== 'TODOS') || 'TODOS'); 
       }
   };
 
   const handleFlowTypeSelect = (type: string) => {
     setFilterType(type);
-    // Se um tipo for selecionado, mas o cliente ainda for 'TODOS',
-    // podemos tentar selecionar o primeiro cliente para exibir o mapa.
-    if (selectedClient === ALL_CLIENTS && clients.length > 1) {
-        setSelectedClient(clients[1]);
+    if (type !== 'TODOS' && selectedClient === ALL_CLIENTS && clients.length > 1) {
+        setSelectedClient(clients.find(client => client !== ALL_CLIENTS) || ALL_CLIENTS);
     }
   };
 
@@ -142,8 +140,6 @@ export default function Home() {
     // TEMA DARK BASE
     <div className="min-h-screen bg-gray-950 p-6 text-gray-100"> 
         
-      {/* RENDERIZA O MODAL DE LOGS SE HOUVER UM ID SELECIONADO */}
-      {/* IMPLEMENTAÇÃO DA FUNCIONALIDADE DE MODAL */}
       {isLogModalOpen && (
           <LogModal 
               logID={isLogModalOpen} 
@@ -154,29 +150,30 @@ export default function Home() {
       {/* ========================================================= */}
       {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
       {/* ========================================================= */}
-      <header className="flex justify-start items-center mb-6">
+      <header className="flex justify-start items-center mb-8">
           <h1 className="text-4xl font-extrabold text-cyan-400 tracking-wider">
               Painel de Monitoramento Multicliente (AIOps)
           </h1>
       </header>
 
       {/* --- FILTROS & KPIs (Seção Superior Otimizada) --- */}
-      <section className="space-y-6 mb-8">
+      <section className="space-y-6 mb-10">
           
           {/* BLOCo 1: SELEÇÃO DE CLIENTE (Melhoria de UX/UI) */}
-          <div className="bg-gray-900 p-4 rounded-lg border-neon shadow-sm shadow-cyan-500/20">
-              <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
-                  1. Seleção de Clientes
+          <div className="bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
+              <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
+                  1. Seleção de Contas Monitoradas
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                   {clients.map((client) => (
                     <button
                       key={client}
                       onClick={() => handleClientSelect(client)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition duration-150 border 
+                      // BOTÃO CLIENTE: Efeito de Borda Neon e Sombra Ciano
+                      className={`px-5 py-2.5 rounded-lg text-lg font-bold tracking-wider transition duration-200 
                         ${selectedClient === client 
-                          ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/40' 
-                          : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                          ? 'bg-cyan-700/60 text-white border-neon shadow-cyan-500/50 pulse-cyan' // Selecionado: Forte brilho neon/pulso
+                          : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' // Não Selecionado: Fundo escuro
                         }`}
                     >
                       {client.replace('_', ' ')}
@@ -189,20 +186,20 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               
               {/* Coluna 1: Filtros de Tipo */}
-              <div className="lg:col-span-1 bg-gray-900 p-4 rounded-lg border-neon shadow-sm shadow-cyan-500/20">
-                  <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
-                      2. Seleção de Fluxo (Ativa Mapa)
+              <div className="lg:col-span-1 bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-200 border-b border-gray-700 pb-2">
+                      2. Seleção de Jornada (Ativa Mapa)
                   </h3>
-                  <div className="flex flex-col space-y-2">
+                  <div className="flex flex-col space-y-3">
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
-                          // MUDANÇA: Usa a nova função que também tenta selecionar um cliente
                           onClick={() => handleFlowTypeSelect(type)}
-                          className={`w-full text-left px-3 py-1 rounded-md text-sm font-medium transition duration-150 border 
+                          // BOTÃO FLUXO: Efeito de Borda Neon e Sombra Ciano
+                          className={`w-full text-left px-4 py-2 rounded-lg text-base font-medium transition duration-200 border 
                             ${filterType === type 
-                              ? 'bg-cyan-600 text-white border-cyan-500' 
-                              : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                              ? 'bg-cyan-700/60 text-white border-neon shadow-cyan-500/50 pulse-cyan' // Selecionado: Forte brilho neon/pulso
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover-neon' // Não Selecionado: Fundo escuro
                             }`}
                         >
                           {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
@@ -222,51 +219,54 @@ export default function Home() {
       </section>
       
       {/* --- DASHBOARD EXECUTIVO (Indicadores de Nível Milionário) --- */}
-      <section className="space-y-8 mb-8">
+      <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
               3. Indicadores Executivos e Visualizações
           </h2>
-          <div className="bg-gray-900 p-6 rounded-lg border-neon shadow-xl shadow-cyan-500/20">
-              {/* Integra o Dashboard Executivo (Gráficos, Barra, Donut/Pie) */}
+          {/* Usa o estilo de gráfico 'chart-box' */}
+          <div className="chart-box p-6 rounded-lg shadow-xl">
               <ExecutiveDashboardClient anomalias={filteredAnomalias} />
           </div>
       </section>
       
       {/* --- MAPA DE FLUXO E ARQUITETURA --- */}
-      <section className="space-y-8 mb-8">
+      <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
               4. Mapa de Erros no Fluxo de Serviço (Visão de Arquitetura)
           </h2>
-          {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
-              <FlowMap 
-                  client={selectedClient}
-                  flowType={filterType}
-                  anomalies={mapAnomalies}
-              />
-          ) : (
-              <div className="bg-gray-900 p-6 rounded-lg text-gray-400 border-neon">
-                  Selecione um **Cliente E** um **Tipo de Fluxo** específico (acima) para visualizar o mapa de arquitetura.
-              </div>
-          )}
+          <div className="chart-box p-6 rounded-lg shadow-xl">
+              {selectedClient !== ALL_CLIENTS && filteredAnomalias.length > 0 && filterType !== 'TODOS' ? (
+                  <FlowMap 
+                      client={selectedClient}
+                      flowType={filterType}
+                      anomalies={mapAnomalies}
+                  />
+              ) : (
+                  <div className="text-gray-400 p-4 text-center">
+                      Selecione um **Cliente E** um **Tipo de Fluxo** (acima) para visualizar o mapa de arquitetura.
+                  </div>
+              )}
+          </div>
       </section>
       
       {/* --- GRÁFICOS (Time Series e Performance) --- */}
-      <section className="space-y-8 mb-8">
+      <section className="space-y-8 mb-12">
           <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
               5. Análise Gráfica de Performance (Time Series)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.keys(chartDataGrouped).length === 0 ? (
-                  <div className="p-6 bg-gray-900 rounded-lg text-center text-gray-400 border-neon md:col-span-2">
+                  <div className="chart-box p-6 rounded-lg text-center text-gray-400 md:col-span-2">
                       Nenhuma anomalia filtrada para plotar os gráficos de série temporal.
                   </div>
               ) : (
                   Object.keys(chartDataGrouped).map(metricKey => (
-                    <DashboardChart
-                      key={metricKey}
-                      title={metricKey.split('_').join(' ')}
-                      data={chartDataGrouped[metricKey]}
-                    />
+                    <div key={metricKey} className="chart-box p-6 rounded-lg">
+                        <DashboardChart
+                          title={metricKey.split('_').join(' ')}
+                          data={chartDataGrouped[metricKey]}
+                        />
+                    </div>
                   ))
               )}
           </div>
@@ -280,7 +280,8 @@ export default function Home() {
           </h2>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-gray-900 shadow-xl rounded-lg border-neon">
+            {/* Usa o estilo de tabela 'table-neon' */}
+            <table className="min-w-full table-neon">
               <thead className="bg-gray-800">
                 <tr>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
@@ -311,10 +312,11 @@ export default function Home() {
                     <td className="py-3 px-4 text-gray-300">{a.metricName} ({a.value.toFixed(2)})</td>
                     <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
                     <td className="py-3 px-4">
+                      {/* Usa os badges customizados do globals.css */}
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold 
-                        ${a.status === 'CORRIGIDO' ? 'bg-green-600 text-white' : 
-                          a.status === 'PENDENTE' ? 'bg-yellow-600 text-gray-900' : 'bg-red-600 text-white'
-                        } shadow-md`}>
+                        ${a.status === 'CORRIGIDO' ? 'badge-green' : 
+                          a.status === 'PENDENTE' ? 'badge-yellow' : 'badge-red'
+                        }`}>
                         {a.status}
                       </span>
                     </td>
