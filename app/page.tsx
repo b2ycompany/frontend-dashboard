@@ -13,10 +13,13 @@ import FlowMap from '../components/FlowMap';
 import LogModal from '../components/LogModal'; 
 import ExecutiveDashboard from '../components/ExecutiveDashboard';
 
-// Importação Dinâmica para SSR (Gráfico de Barras)
+// -----------------------------------------------------------------
+// Importação Dinâmica para SSR
+// -----------------------------------------------------------------
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
   ssr: false, 
 });
+// -----------------------------------------------------------------
 
 
 // Interface ajustada para incluir client_id
@@ -26,18 +29,30 @@ interface Anomalia extends DocumentData {
   value: number;
   host: string;
   causaRaiz: string;
-  status: 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO';
+  // NOVOS STATUS DE GESTÃO DE TICKET E AUTOMAÇÃO
+  status: 'NORMAL' | 'TICKET_ABERTO' | 'EM_ESCALONAMENTO' | 'CORRIGIDO_SUCESSO' | 'CORRIGIDO_FALHA';
   logID: string; 
   data_type: string;
-  client_id: string; 
+  client_id: string; // CAMPO CRÍTICO PARA O FILTRO
+  ticket_id?: string; // NOVO CAMPO PARA O ID DO TICKET
 }
 
 const ALL_CLIENTS = 'TODOS_CLIENTES';
 const FILTER_TYPES = ['TODOS', 'FLUXO_ONBOARDING', 'APLICACAO_AUTH', 'INFRA_TRANSACAO', 'FLUXO_SINISTRO', 'INFRA_DB_LOCKS'];
 
+
+// Mapeamento de Status para Cor e Texto (Melhor Prática de UI)
+const STATUS_MAP = {
+    'TICKET_ABERTO': { text: 'TICKET ABERTO', class: 'bg-blue-600 text-white' },
+    'EM_ESCALONAMENTO': { text: 'ESCALONADO', class: 'bg-yellow-600 text-gray-900' },
+    'CORRIGIDO_SUCESSO': { text: 'CORRIGIDO (AIOps)', class: 'bg-green-600 text-white' },
+    'CORRIGIDO_FALHA': { text: 'FALHA CORREÇÃO', class: 'bg-red-600 text-white' },
+    'NORMAL': { text: 'NORMAL', class: 'bg-gray-700 text-gray-300' },
+};
+
+
 // Componente de Card (Tema Neon)
 const Card: React.FC<{ title: string, value: number }> = ({ title, value }) => (
-  // Usa o estilo 'card-neon' do globals.css
   <div className={`card-neon p-6 rounded-xl transition duration-300`}>
     <p className="text-sm font-medium text-gray-400">{title}</p>
     <p className="text-4xl font-extrabold mt-2 text-white">
@@ -66,7 +81,7 @@ export default function Home() {
       querySnapshot.forEach((doc) => {
         anomaliasData.push(doc.data() as Anomalia);
       });
-      setAnomalias(anomaliasData);
+      setAnomalias(anomaliasData.filter(a => a.status !== 'NORMAL')); // Filtra o status 'NORMAL'
     }, (error) => {
         console.error("DEBUG: ERRO na Leitura do Firestore:", error.code, error.message);
     });
@@ -109,7 +124,7 @@ export default function Home() {
   // 4. PREPARA DADOS PARA O MAPA DE FLUXO
   const mapAnomalies = filteredAnomalias.map(a => ({
     host: a.host,
-    status: a.status as 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO'
+    status: a.status === 'CORRIGIDO_SUCESSO' ? 'CORRIGIDO' : 'PENDENTE' as 'PENDENTE' | 'CORRIGIDO' | 'FALHA_CORRECAO'
   }));
 
 
@@ -207,9 +222,11 @@ export default function Home() {
 
               {/* Colunas 2-4: KPIs */}
               <div className="lg:col-span-3 grid grid-cols-3 gap-6">
-                  <Card title="Total Anomalias Filtradas" value={filteredAnomalias.length} />
-                  <Card title="Pendentes de Correção" value={filteredAnomalias.filter(a => a.status === 'PENDENTE').length} />
-                  <Card title="Corrigidas (Robô)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO').length} />
+                  <Card title="Total Anomalias Ativas" value={filteredAnomalias.length} />
+                  {/* KPI para TICKET ABERTO (Ação de Escalonamento) */}
+                  <Card title="Tickets Abertos (Escalonamento)" value={filteredAnomalias.filter(a => a.status === 'TICKET_ABERTO' || a.status === 'EM_ESCALONAMENTO').length} />
+                  {/* KPI para CORRIGIDAS (Sucesso da Automação) */}
+                  <Card title="Corrigidas (AIOps Sucesso)" value={filteredAnomalias.filter(a => a.status === 'CORRIGIDO_SUCESSO').length} />
               </div>
           </div>
 
@@ -280,53 +297,56 @@ export default function Home() {
             <table className="min-w-full table-neon">
               <thead className="bg-gray-800">
                 <tr>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Ticket ID</th> 
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Cliente</th> 
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Tipo</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Timestamp (BR)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Métrica</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Causa Raiz (IA)</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status Robô</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Status</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-cyan-400">Log</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAnomalias.map((a, index) => (
-                  <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
-                    <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
-                    <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
-                    <td className="py-3 px-4 text-gray-300">
-                      {new Date(a.timestamp).toLocaleString('pt-BR', { 
-                        timeZone: 'America/Sao_Paulo', 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit' 
-                      })}
-                    </td>
-                    <td className="py-3 px-4 text-gray-300">{a.metricName} ({a.value.toFixed(2)})</td>
-                    <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
-                    <td className="py-3 px-4">
-                      {/* Usa os badges customizados do globals.css */}
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold 
-                        ${a.status === 'CORRIGIDO' ? 'badge-green' : 
-                          a.status === 'PENDENTE' ? 'badge-yellow' : 'badge-red'
-                        }`}>
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <button 
-                        onClick={() => openLogModal(a.logID)} 
-                        className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
-                        disabled={!a.logID}
-                      >
-                        Ver Log
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredAnomalias.map((a, index) => {
+                  const statusInfo = STATUS_MAP[a.status] || STATUS_MAP.TICKET_ABERTO; // Fallback
+                  return (
+                    <tr key={a.logID || index} className="border-b border-gray-700 hover:bg-gray-700/50 transition duration-150">
+                      
+                      {/* NOVO: ID do Ticket */}
+                      <td className="py-3 px-4 text-blue-400 font-medium">{a.ticket_id || 'N/A'}</td>
+
+                      <td className="py-3 px-4 font-bold text-gray-200">{a.client_id?.replace('_', ' ') || 'N/A'}</td> 
+                      <td className="py-3 px-4 text-gray-300">{a.data_type?.split('_').join(' ') || 'N/A'}</td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {new Date(a.timestamp).toLocaleString('pt-BR', { 
+                          timeZone: 'America/Sao_Paulo', 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: 'numeric',
+                          hour: '2-digit', 
+                          minute: '2-digit', 
+                          second: '2-digit' 
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">{a.causaRaiz}</td>
+                      <td className="py-3 px-4">
+                        {/* Status Mapeado */}
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.class}`}>
+                          {statusInfo.text}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button 
+                          onClick={() => openLogModal(a.logID)} 
+                          className="text-cyan-400 hover:text-cyan-300 font-medium disabled:opacity-50"
+                          disabled={!a.logID}
+                        >
+                          Ver Log
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
