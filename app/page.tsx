@@ -116,13 +116,12 @@ export default function Home() {
 
 
   const openLogModal = (logID: string) => {
-    setIsLogModalOpen(logID); // Abre o modal com o Log ID selecionado
+    setIsLogModalOpen(logID);
   };
 
   // Funções de manipulação de filtro OTIMIZADAS PARA O MAPA
   const handleClientSelect = (client: string) => {
       setSelectedClient(client);
-      // UX: Se um cliente for selecionado, e houver dados, tenta focar em um fluxo específico.
       if (client !== ALL_CLIENTS && filterType === 'TODOS' && FILTER_TYPES.length > 1) {
           setFilterType(FILTER_TYPES.find(type => type !== 'TODOS') || 'TODOS'); 
       }
@@ -130,7 +129,6 @@ export default function Home() {
 
   const handleFlowTypeSelect = (type: string) => {
     setFilterType(type);
-    // UX: Se um fluxo for selecionado, e houver clientes, tenta focar no primeiro cliente válido.
     if (type !== 'TODOS' && selectedClient === ALL_CLIENTS && clients.length > 1) {
         setSelectedClient(clients.find(client => client !== ALL_CLIENTS) || ALL_CLIENTS);
     }
@@ -166,15 +164,16 @@ export default function Home() {
               <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
                   1. Seleção de Clientes
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3"> {/* Aumentado o gap */}
                   {clients.map((client) => (
                     <button
                       key={client}
                       onClick={() => handleClientSelect(client)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition duration-150 border 
+                      // CLASSE MELHORADA PARA CLIENTES (Mais espaçoso e efeito NEON mais forte)
+                      className={`px-5 py-2.5 rounded-lg text-lg font-bold tracking-wider transition duration-200 border 
                         ${selectedClient === client 
-                          ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/40' 
-                          : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                          ? 'bg-cyan-700/50 text-white border-cyan-500 shadow-neon' // Selecionado: Forte brilho neon
+                          : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' // Não Selecionado: Fundo escuro
                         }`}
                     >
                       {client.replace('_', ' ')}
@@ -191,15 +190,16 @@ export default function Home() {
                   <h3 className="text-xl font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
                       2. Seleção de Fluxo (Ativa Mapa)
                   </h3>
-                  <div className="flex flex-col space-y-2">
+                  <div className="flex flex-col space-y-3"> {/* Aumentado o space-y */}
                       {FILTER_TYPES.map((type) => (
                         <button
                           key={type}
                           onClick={() => handleFlowTypeSelect(type)}
-                          className={`w-full text-left px-3 py-1 rounded-md text-sm font-medium transition duration-150 border 
+                          // CLASSE MELHORADA PARA FLUXOS (Mais espaçoso e efeito NEON mais forte)
+                          className={`w-full text-left px-4 py-2 rounded-md text-base font-medium transition duration-200 border 
                             ${filterType === type 
-                              ? 'bg-cyan-600 text-white border-cyan-500' 
-                              : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                              ? 'bg-cyan-700/50 text-white border-cyan-500 shadow-neon' // Selecionado: Forte brilho neon
+                              : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700' // Não Selecionado: Fundo escuro
                             }`}
                         >
                           {type.replace('_', ' ')} ({anomalias.filter(a => a.data_type === type && (selectedClient === ALL_CLIENTS || a.client_id === selectedClient)).length})
