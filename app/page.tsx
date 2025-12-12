@@ -14,15 +14,15 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic'; 
+import Image from 'next/image'; // Importa o componente Image
 
-// Importação CORRIGIDA dos ícones usados nos Cards de Gestão de Incidentes
+// Ícones
 import { FiBarChart2, FiHardDrive, FiUsers } from 'react-icons/fi'; 
 
-// Importa os componentes de visualização
+// Componentes
 import DashboardChart from '../components/DashboardChart'; 
 import FlowMap from '../components/FlowMap'; 
 import LogModal from '../components/LogModal'; 
-import Sidebar from '../components/Sidebar'; 
 
 // Importação Dinâmica para SSR
 const ExecutiveDashboardClient = dynamic(() => import('../components/ExecutiveDashboard'), {
@@ -161,7 +161,7 @@ export default function Home() {
 
 
   return (
-    // CONTÊINER PRINCIPAL: Adiciona o padding esquerdo para a Sidebar
+    // TEMA DARK BASE
     <div className="min-h-screen bg-gray-950 text-gray-100"> 
         
       {isLogModalOpen && (
@@ -171,22 +171,39 @@ export default function Home() {
           />
       )}
 
-      {/* RENDERIZAÇÃO DA SIDEBAR */}
-      <Sidebar />
+      {/* ========================================================= */}
+      {/* NOVO CABEÇALHO PROEMINENTE (HEADER) */}
+      {/* ========================================================= */}
+      <header className="bg-gray-900 border-b border-gray-800 shadow-xl py-4 mb-8 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+              
+              <div className="flex items-center space-x-4">
+                  {/* LOGO LR MONITOR GRANDE (Usando o .jpeg) */}
+                  <Image 
+                    src="/logo_lr_monitor.jpeg" 
+                    alt="LR Monitor Logo" 
+                    width={160} // Tamanho maior para destaque
+                    height={32} 
+                    priority={true} 
+                  /> 
+                  
+                  {/* Título Principal Abaixo do Logo */}
+                  <h1 className="text-3xl font-extrabold text-cyan-400 tracking-wide ml-4 hidden sm:block">
+                      Dashboard Operacional AIOps
+                  </h1>
+              </div>
 
-      {/* CONTEÚDO PRINCIPAL: Empurrado para a direita (pl-64) */}
-      <div className="pl-64 p-6"> 
+              {/* Espaço para navegação futura ou perfil do usuário */}
+              <div className="flex items-center space-x-4">
+                 <p className="text-sm text-gray-400 hidden md:block">Bem-vindo(a), Operador SRE</p>
+              </div>
+
+          </div>
+      </header>
+
+      {/* CONTEÚDO PRINCIPAL (Centralizado e Alinhado) */}
+      <div className="max-w-7xl mx-auto px-6 p-4"> 
         
-        {/* ========================================================= */}
-        {/* 1. PAINEL PRINCIPAL (LAYOUT PRINCIPAL) */}
-        {/* ========================================================= */}
-        <header className="flex justify-start items-center mb-8">
-            {/* Título Principal (LR Monitor está na Sidebar) */}
-            <h1 className="text-3xl font-extrabold text-cyan-400 tracking-wider">
-                Dashboard Operacional
-            </h1>
-        </header>
-
         {/* --- 1. FILTROS DE CLIENTE --- */}
         <section className="space-y-6 mb-8">
             <div className="bg-gray-900/70 p-5 rounded-lg border-neon shadow-lg">
@@ -246,7 +263,7 @@ export default function Home() {
         </section>
         
         {/* ========================================================= */}
-        {/* 3. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) - NOVO LAYOUT DE CARDS */}
+        {/* 3. GESTÃO DE INCIDENTES (ORQUESTRAÇÃO DE TICKETS) */}
         {/* ========================================================= */}
         <section className="space-y-6 mb-10">
             <h2 className="text-2xl font-semibold text-gray-200 border-b border-gray-700 pb-2">
@@ -257,7 +274,7 @@ export default function Home() {
                   Incidentes Pendentes de Ação Manual ou Escalonamento
               </h3>
               
-              {/* NOVO LAYOUT DE CARDS PARA FILAS (Simulando o Image Gerado) */}
+              {/* LAYOUT DE CARDS PARA FILAS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
                   {/* Fila 1: FALHA CORREÇÃO (Máxima Prioridade) */}
