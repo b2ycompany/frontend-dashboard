@@ -14,7 +14,7 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import React from 'react';
 import dynamic from 'next/dynamic'; 
-import Image from 'next/image'; // Importa o componente Image
+import Image from 'next/image'; 
 
 // Ícones
 import { FiBarChart2, FiHardDrive, FiUsers } from 'react-icons/fi'; 
@@ -178,18 +178,19 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
               
               <div className="flex items-center space-x-4">
-                  {/* LOGO LR MONITOR GRANDE (Usando o .jpeg) */}
+                  {/* LOGO LR MONITOR GRANDE E CORRIGIDO */}
                   <Image 
                     src="/logo_lr_monitor.jpeg" 
                     alt="LR Monitor Logo" 
-                    width={160} // Tamanho maior para destaque
-                    height={32} 
+                    width={220} // Aumento do tamanho
+                    height={40}  // Aumento da altura
                     priority={true} 
+                    style={{ objectFit: 'contain' }} // Garante que a imagem não seja achatada
                   /> 
                   
                   {/* Título Principal Abaixo do Logo */}
                   <h1 className="text-3xl font-extrabold text-cyan-400 tracking-wide ml-4 hidden sm:block">
-                      Dashboard Operacional AIOps
+                      Dashboard Operacional
                   </h1>
               </div>
 
